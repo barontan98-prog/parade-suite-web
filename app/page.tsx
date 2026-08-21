@@ -1089,13 +1089,32 @@ export default function Home() {
   }
 
   async function stopInterlude() {
+    const currentIndex = selectedIndex;
+
+    if (currentIndex === null) {
+      setStatus("NO PLAYLIST TRACK SELECTED");
+      return;
+    }
+
     if (!audio.current?.isInterludePlaying()) {
-      setStatus("INTERLUDE NOT PLAYING");
+      // Even if the Interlude has already stopped, End Song / Stop should
+      // still prepare the next playlist item.
+      if (currentIndex + 1 < sequence.length) {
+        const nextIndex = currentIndex + 1;
+        setSelectedIndex(nextIndex);
+        setStatus(
+          "INTERLUDE STOPPED • next track selected • press Play when ready"
+        );
+      } else {
+        setStatus("INTERLUDE STOPPED • end of playlist");
+      }
       return;
     }
 
     setStatus("INTERLUDE FADING • 5 seconds");
 
+    // Capture the playlist position before the asynchronous 5-second fade.
+    // This prevents a stale React state value from stopping the next-row move.
     await audio.current.fadeInterludeToStop(
       5000,
       (value) => setInterludeLive(Math.round(value * 100))
@@ -1104,8 +1123,8 @@ export default function Home() {
     setInterludeLive(interludeDefault);
     audio.current.setInterludeVolume(interludeDefault / 100);
 
-    if (selectedIndex !== null && selectedIndex + 1 < sequence.length) {
-      const nextIndex = selectedIndex + 1;
+    if (currentIndex + 1 < sequence.length) {
+      const nextIndex = currentIndex + 1;
       setSelectedIndex(nextIndex);
       setStatus(
         "INTERLUDE STOPPED • next track selected • press Play when ready"
@@ -1168,7 +1187,7 @@ export default function Home() {
       <header className="topbar">
         <div>
           <h1>Parade Suite</h1>
-          <span className="version">Web v0.136 • Interlude End Song Fade-Stop + Sequence Files</span>
+          <span className="version">Web v0.137 • Interlude Next Selection Fix + Sequence Files</span>
         </div>
 
         <div className="topbar-access">

@@ -462,3 +462,15 @@ beat-synchronised Ending Beat logic.
 `Next Song` behavior is unchanged.
 
 No Supabase migration is required.
+
+
+## v0.137 — Interlude Next-Selection Fix
+
+Interlude Stop / End Song now captures the current playlist row before the
+5-second asynchronous fade begins. When the fade completes, Parade Suite
+explicitly selects the following playlist item.
+
+If the Interlude has already stopped, pressing Stop / End Song still advances
+the selection to the next playlist item.
+
+The next track remains prepared only; it does not auto-play.
