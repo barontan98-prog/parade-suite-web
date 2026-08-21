@@ -107,6 +107,7 @@ export default function Home() {
   const [uploadFilePercent, setUploadFilePercent] = useState(0);
   const [uploadFailures, setUploadFailures] = useState<string[]>([]);
   const [uploadSuccesses, setUploadSuccesses] = useState<string[]>([]);
+  const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
 
   useEffect(() => {
     audio.current = new AudioEngine();
@@ -194,6 +195,7 @@ export default function Home() {
     clearScheduledTimers();
     audio.current?.hardStopMain();
     audio.current?.stopInterludeImmediately();
+    audio.current?.stopPreview();
     setAccessUser(null);
     setTracks([]);
     setSequence([]);
@@ -346,6 +348,36 @@ export default function Home() {
     }
 
     return refreshed;
+  }
+
+  function isInterludeTrack(track: Track | null | undefined) {
+    if (!track) return false;
+    const title = track.title.toLowerCase();
+    const category = (track.category || "").toLowerCase();
+
+    return (
+      category.includes("interlude") ||
+      title.startsWith("interlude") ||
+      title.includes("interlude -")
+    );
+  }
+
+  async function previewMusic(track: Track) {
+    try {
+      if (previewTrackId === track.id && audio.current?.isPreviewPlaying()) {
+        audio.current.stopPreview();
+        setPreviewTrackId(null);
+        return;
+      }
+
+      audio.current?.stopPreview();
+      await audio.current?.playPreview(track.file_url, musicVolume / 100);
+      setPreviewTrackId(track.id);
+    } catch (error) {
+      console.error("Preview playback failed", error);
+      setPreviewTrackId(null);
+      setStatus(`PREVIEW FAILED • ${track.title}`);
+    }
   }
 
   const filteredTracks = useMemo(() => {
@@ -804,29 +836,44 @@ export default function Home() {
   }
 
   async function playInterlude() {
-    if (!selectedTrack || selected?.action !== "Interlude") return;
+    if (!selectedTrack || !isInterludeTrack(selectedTrack)) {
+      setStatus("SELECT AN INTERLUDE TRACK FROM THE PLAYLIST");
+      return;
+    }
 
-    setInterludeLive(interludeDefault);
-    await audio.current?.playInterlude(
-      selectedTrack.file_url,
-      interludeDefault / 100
-    );
-    setStatus("INTERLUDE PLAYING");
+    try {
+      setInterludeLive(interludeDefault);
+      audio.current?.setInterludeVolume(interludeDefault / 100);
+      await audio.current?.playInterlude(
+        selectedTrack.file_url,
+        interludeDefault / 100
+      );
+      setStatus("INTERLUDE PLAYING • LOOP ACTIVE");
+    } catch (error) {
+      console.error("Interlude playback failed", error);
+      setStatus("INTERLUDE PLAYBACK FAILED");
+    }
   }
 
   async function stopInterlude() {
+    if (!audio.current?.isInterludePlaying()) {
+      setStatus("INTERLUDE NOT PLAYING");
+      return;
+    }
+
     setStatus("INTERLUDE FADING • 5 seconds");
 
-    await audio.current?.fadeInterludeToStop(
+    await audio.current.fadeInterludeToStop(
       5000,
       (value) => setInterludeLive(Math.round(value * 100))
     );
 
     setInterludeLive(interludeDefault);
-    audio.current?.setInterludeVolume(interludeDefault / 100);
+    audio.current.setInterludeVolume(interludeDefault / 100);
 
     if (selectedIndex !== null && selectedIndex + 1 < sequence.length) {
-      setSelectedIndex(selectedIndex + 1);
+      const nextIndex = selectedIndex + 1;
+      setSelectedIndex(nextIndex);
       setStatus(
         "INTERLUDE STOPPED • next track selected • press Play when ready"
       );
@@ -888,7 +935,7 @@ export default function Home() {
       <header className="topbar">
         <div>
           <h1>Parade Suite</h1>
-          <span className="version">Web v0.131 • User LIB Set + Signed Upload Fix</span>
+          <span className="version">Web v0.132 • iPad Controls + Interlude Fix + Music Preview</span>
         </div>
 
         <div className="topbar-access">
@@ -1027,8 +1074,16 @@ export default function Home() {
                       {(track.has_lib || track.has_timing_map) ? "✅" : "❌"}
                     </span>
                     <button
+                      className={`preview-btn ${previewTrackId === track.id ? "previewing" : ""}`}
+                      onClick={() => void previewMusic(track)}
+                      title="Preview music"
+                    >
+                      {previewTrackId === track.id ? "■ Stop" : "▶ Preview"}
+                    </button>
+                    <button
                       className="icon-btn"
                       onClick={() => addTrackToSequence(track)}
+                      title="Add to parade sequence"
                     >
                       ＋
                     </button>
@@ -1106,7 +1161,7 @@ export default function Home() {
       ) : (
         <section className="manager-layout">
           <div className="manager-main">
-            <div className="panel">
+            <div className="panel manager-playlist-panel">
               <h2>Playlist</h2>
 
               <div className="playlist">
@@ -1135,6 +1190,66 @@ export default function Home() {
               </div>
             </div>
 
+          </div>
+
+          <aside className="manager-controls">
+            <div className="panel interlude-panel">
+            <h2>Interlude Music</h2>
+
+            <p className="hint center">
+              Loaded from the Parade Manager playlist. Loops continuously; Stop
+              fades out over 5 seconds.
+            </p>
+
+            <div className="interlude-name">
+              {isInterludeTrack(selectedTrack)
+                ? selectedTrack?.title
+                : "Select an Interlude track from the playlist"}
+            </div>
+
+            <div className="interlude-buttons">
+              <button className="primary" onClick={playInterlude}>
+                ▶ Play / Loop
+              </button>
+              <button onClick={stopInterlude}>■ Stop</button>
+            </div>
+
+            <label className="default-box">
+              <strong>Default %</strong>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={interludeDefault}
+                onChange={(e) =>
+                  setInterludeDefault(
+                    Math.max(0, Math.min(100, Number(e.target.value)))
+                  )
+                }
+              />
+            </label>
+
+            <h3>Interlude Volume</h3>
+
+            <div className="scale">
+              <span>0</span>
+              <span>25</span>
+              <span>50</span>
+              <span>75</span>
+              <span>100</span>
+            </div>
+
+            <input
+              className="volume-slider"
+              type="range"
+              min="0"
+              max="100"
+              value={interludeLive}
+              onChange={(e) => setInterludeLive(Number(e.target.value))}
+            />
+
+            <div className="live-value">{interludeLive}%</div>
+            </div>
             <div className="action-grid">
               <div className="panel">
                 <h2>Actions</h2>
@@ -1284,64 +1399,6 @@ export default function Home() {
                 <strong>{cueVolume}%</strong>
               </label>
             </div>
-          </div>
-
-          <aside className="panel interlude-panel">
-            <h2>Interlude Music</h2>
-
-            <p className="hint center">
-              Loaded from the Parade Manager playlist. Loops continuously; Stop
-              fades out over 5 seconds.
-            </p>
-
-            <div className="interlude-name">
-              {selected?.action === "Interlude"
-                ? selectedTrack?.title
-                : "No Interlude Selected"}
-            </div>
-
-            <div className="interlude-buttons">
-              <button className="primary" onClick={playInterlude}>
-                ▶ Play / Loop
-              </button>
-              <button onClick={stopInterlude}>■ Stop</button>
-            </div>
-
-            <label className="default-box">
-              <strong>Default %</strong>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={interludeDefault}
-                onChange={(e) =>
-                  setInterludeDefault(
-                    Math.max(0, Math.min(100, Number(e.target.value)))
-                  )
-                }
-              />
-            </label>
-
-            <h3>Interlude Volume</h3>
-
-            <div className="scale">
-              <span>0</span>
-              <span>25</span>
-              <span>50</span>
-              <span>75</span>
-              <span>100</span>
-            </div>
-
-            <input
-              className="volume-slider"
-              type="range"
-              min="0"
-              max="100"
-              value={interludeLive}
-              onChange={(e) => setInterludeLive(Number(e.target.value))}
-            />
-
-            <div className="live-value">{interludeLive}%</div>
           </aside>
         </section>
       )}

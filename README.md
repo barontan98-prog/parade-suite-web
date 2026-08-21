@@ -334,3 +334,43 @@ This means the uploaded LIB filenames are now the authoritative built-in timing
 maps used by the webapp.
 
 No Supabase SQL migration is required.
+
+
+## v0.132 — iPad Manager Controls, Interlude Fix, Editor Preview
+
+### Parade Editor music preview
+Every Music Library row now has a `▶ Preview` button. Preview uses a separate
+audio player so it does not modify the Parade Manager's main playback state.
+The same button becomes `■ Stop` for the previewed track.
+
+### Interlude
+The Interlude panel now identifies Interlude music by the selected track's
+category/title instead of requiring the sequence Action dropdown to literally be
+`Interlude`.
+
+This fixes playlists where an Interlude track is configured as `Repeat`, as in
+the iPad layout example.
+
+- Play / Loop starts the selected Interlude directly from the user tap, which is
+  compatible with iPad/iPhone Safari media restrictions.
+- Interlude loops continuously.
+- Stop performs the Windows-style 5-second smooth fade.
+- After the fade, Interlude resets to its configured default volume and the next
+  playlist item becomes selected without automatically playing.
+
+### iPad Parade Manager layout
+The following controls are moved from below the playlist into the right-side
+control column under Interlude:
+
+- Actions
+- Drum Cues
+- Now Playing
+- Previous / Play / Stop / Immediate Skip
+- Music Volume
+- Cue Volume
+
+The right control column is sticky and independently scrollable on desktop/iPad
+landscape so a long parade playlist no longer pushes operational controls below
+the screen.
+
+No Supabase migration is required.

@@ -287,3 +287,98 @@ small, .hint { color: var(--muted); font-size: 12px; }
 .upload-errors {
   color: #fecaca;
 }
+
+
+/* v0.132 — editor preview + iPad manager control column */
+.preview-btn {
+  white-space: nowrap;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.preview-btn.previewing {
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+
+.manager-controls {
+  display: grid;
+  gap: 14px;
+  align-self: start;
+  position: sticky;
+  top: 76px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.manager-controls .interlude-panel {
+  position: static;
+  align-self: auto;
+}
+
+.manager-controls .action-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.manager-controls .now-playing {
+  min-height: 170px;
+}
+
+.manager-controls .current-title {
+  font-size: clamp(24px, 2.4vw, 38px);
+}
+
+.manager-controls .next-track {
+  font-size: 14px;
+}
+
+.manager-controls .transport {
+  grid-template-columns: 1fr 1fr;
+}
+
+.manager-controls .volume-grid {
+  grid-template-columns: 1fr;
+}
+
+.manager-playlist-panel {
+  min-height: calc(100vh - 105px);
+}
+
+.manager-playlist-panel .playlist {
+  max-height: calc(100vh - 165px);
+}
+
+@media (min-width: 901px) and (max-width: 1400px) {
+  .manager-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 42vw);
+    align-items: start;
+  }
+
+  .manager-controls {
+    top: 72px;
+  }
+
+  .manager-controls .big-btn {
+    min-height: 46px;
+  }
+
+  .manager-controls .now-playing {
+    min-height: 150px;
+  }
+}
+
+@media (max-width: 900px) {
+  .manager-controls {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .manager-playlist-panel {
+    min-height: auto;
+  }
+
+  .manager-playlist-panel .playlist {
+    max-height: 48vh;
+  }
+}

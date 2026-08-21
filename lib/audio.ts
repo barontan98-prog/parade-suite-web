@@ -12,6 +12,7 @@ export class AudioEngine {
   private main = new Audio();
   private repeatPlayer = new Audio();
   private interlude = new Audio();
+  private preview = new Audio();
   private ending = new Audio();
   private singleCue = new Audio();
   private doubleCue = new Audio();
@@ -45,6 +46,7 @@ export class AudioEngine {
     this.main.preload = "auto";
     this.repeatPlayer.preload = "auto";
     this.interlude.preload = "auto";
+    this.preview.preload = "auto";
     this.ending.preload = "auto";
     this.singleCue.preload = "auto";
     this.doubleCue.preload = "auto";
@@ -277,12 +279,41 @@ export class AudioEngine {
     config.onNaturalEnd?.();
   }
 
+  async playPreview(url: string, volume?: number) {
+    this.preview.pause();
+    this.preview.src = url;
+    this.preview.currentTime = 0;
+    this.preview.loop = false;
+    this.preview.volume = Math.max(
+      0,
+      Math.min(1, volume ?? this.musicVolume)
+    );
+    await this.preview.play();
+  }
+
+  stopPreview() {
+    this.preview.pause();
+    try { this.preview.currentTime = 0; } catch {}
+  }
+
+  isPreviewPlaying(): boolean {
+    return !this.preview.paused && !this.preview.ended;
+  }
+
   async playInterlude(url: string, volume: number) {
     this.interlude.pause();
-    this.interlude.src = url;
-    this.interlude.currentTime = 0;
+
+    if (this.interlude.src !== url) {
+      this.interlude.src = url;
+      this.interlude.load();
+    }
+
+    try { this.interlude.currentTime = 0; } catch {}
     this.interlude.loop = true;
     this.interlude.volume = Math.max(0, Math.min(1, volume));
+
+    // Called directly from the Interlude Play button so this remains inside
+    // the iOS/iPadOS user gesture required by Safari media playback.
     await this.interlude.play();
   }
 
