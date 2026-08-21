@@ -1,0 +1,15 @@
+{
+  "canonical_cue_hashes_match_windows": {
+    "singlebeat.wav": true,
+    "doublebeat.wav": true,
+    "Ending Beat.wav": true,
+    "knights_ending_beat.wav": true
+  },
+  "legacy_timing_maps_match_windows": true,
+  "metadata_match_windows": {
+    "category_corrections.json": true,
+    "music_library.json": true
+  },
+  "active_old_700hz_references": [],
+  "ios_scheduler_present": true
+}

@@ -1,0 +1,25 @@
+{
+  "source_zip": "Parade_Suite_Windows_v0.104(1).zip",
+  "removed_files": [
+    "original_dressing_roll.wav",
+    "original_dressing_roll_v2.wav",
+    "tap.wav",
+    "sample.parade.json",
+    "legacy_category_model.json",
+    "examples/"
+  ],
+  "kept_for_compatibility": [
+    "bass_boost_profiles/",
+    "singlebeat.wav",
+    "doublebeat.wav",
+    "original_single_beat.wav",
+    "original_double_beat.wav",
+    "Ending Beat.wav",
+    "original_ending_beat.wav",
+    "knights_ending_beat.wav",
+    "legacy_timing_maps/",
+    "music_library/",
+    "ParadeSuite.pyw"
+  ],
+  "note": "ParadeSuite.pyw is intentionally retained so the app can be launched without opening a Command Prompt window. No playback/timing code was changed."
+}

@@ -1,0 +1,754 @@
+[
+  {
+    "title": "Advance Call",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Advance Call.wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Advance in Review Order (Band)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Advance in Review Order (Band).wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Advance in Review Order (Drum Beat)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Advance in Review Order (Drum Beat).wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Advance Review Order (Soft)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Advance Review Order (Soft).wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "All The Way",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\All The Way.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Artillery march",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Artillery march.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Auld Lang Syne (Ceremonial Exit)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Auld Lang Syne (Ceremonial Exit).wav",
+    "category": "Slow March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bandstand",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bandstand.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bobs Own Slow March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bobs Own Slow March.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Brave Warrior",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Brave Warrior.wav",
+    "category": "Others",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bugle - Last Post",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bugle - Last Post.wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bugle - Rouse",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bugle - Rouse.wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bugle Call - ( Dinner Call )",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bugle Call - ( Dinner Call ).wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bugle Call - Dressing Up",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bugle Call - Dressing Up.wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Bugle-Camp Quarter Guard",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Bugle-Camp Quarter Guard.wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Commando",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Commando.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Corp of Drum Solo",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Corp of Drum Solo.wav",
+    "category": "Drum Solo",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Dressing Roll",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Dressing Roll.wav",
+    "category": "Drum Solo",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Engineer March Bergerak",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Engineer March Bergerak.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Escort to the Colour",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Escort to the Colour.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Euphoria Fanfare",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Euphoria Fanfare.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare - CUTTHROAT ISLAND",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare - CUTTHROAT ISLAND.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare Con spirito e ritmico",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare Con spirito e ritmico.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare Con spirito",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare Con spirito.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare for a Dignified Occassion",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare for a Dignified Occassion.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare for Chief Commissioner",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare for Chief Commissioner.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare for Commissioners",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare for Commissioners.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare for Heroes",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare for Heroes.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare Moderato",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare Moderato.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Fanfare No.3",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Fanfare No.3.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Festival Fanfare",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Festival Fanfare.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "First and Foremost",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\First and Foremost.wav",
+    "category": "Inspection Tunes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "For The People For The Nation",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\For The People For The Nation.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Guard Of Honour March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Guard Of Honour March.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Guest Of Honour Fanfare 1",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Guest Of Honour Fanfare 1.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Guest Of Honour Fanfare 2",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Guest Of Honour Fanfare 2.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Guest Of Honour Fanfare 3",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Guest Of Honour Fanfare 3.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Guest Of Honour Fanfare 4",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Guest Of Honour Fanfare 4.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Honour and Glory",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Honour and Glory.wav",
+    "category": "Inspection Tunes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude - Energetic Upbeat Pop",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude - Energetic Upbeat Pop.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude - Finish Line",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude - Finish Line.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude - Upbeat and Inspiring Corporate",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude - Upbeat and Inspiring Corporate.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude - Uplifting Inspiring Upbeat Corporate",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude - Uplifting Inspiring Upbeat Corporate.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude 1 SAF",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude 1 SAF.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude 2 SAF",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude 2 SAF.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude 3 SAF",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude 3 SAF.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Interlude 4 SAF",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Interlude 4 SAF.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Jubilation",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Jubilation.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Knights of St John",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Knights of St John.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Majulah Singapura ( Abridged Version )",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Majulah Singapura ( Abridged Version ).wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Majulah Singapura ( Full Version )",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Majulah Singapura ( Full Version ).wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Marching With Pride",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Marching With Pride.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Marching With The Guards",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Marching With The Guards.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Markers Call",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Markers Call.wav",
+    "category": "Bugle Calls",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Markers Drum Solo",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Markers Drum Solo.wav",
+    "category": "Drum Solo",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Munneru Valiba",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Munneru Valiba.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Negara Kita",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Negara Kita.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "OCS Song March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\OCS Song March.wav",
+    "category": "Others",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "OCS Song",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\OCS Song.wav",
+    "category": "Others",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Point of War",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Point of War.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Presidential Fanfare",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Presidential Fanfare.wav",
+    "category": "Fanfares",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Pride Discipline and Honour",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Pride Discipline and Honour.wav",
+    "category": "Inspection Tunes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Pride of Amour",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Pride of Amour.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Pride of Our Nation",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Pride of Our Nation.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "RSAF March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\RSAF March.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "RSN March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\RSN March.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "SAFTI March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\SAFTI March.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No1 - Head of State",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No1 - Head of State.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No2 - Prime Minister",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No2 - Prime Minister.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No3 - Minister",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No3 - Minister.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No4 - CDF",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No4 - CDF.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No5 - Service Chief",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No5 - Service Chief.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No6 - Reviewing Officer (General Salute)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No6 - Reviewing Officer (General Salute).wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute No7 - SAF Salute",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute No7 - SAF Salute.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Salute to Nation",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Salute to Nation.wav",
+    "category": "Others",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Signals March Berjuang",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Signals March Berjuang.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Singapore Our Homeland",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Singapore Our Homeland.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "SIR March",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\SIR March.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "SJ Salute Number 1 - Salute for Reviewing Officer",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\SJ Salute Number 1 - Salute for Reviewing Officer.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "SJ Salute Number 2 - Salute for Prior of Priory of Singapore",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\SJ Salute Number 2 - Salute for Prior of Priory of Singapore.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "SJ Salute Number 3 - Salute for Chief Commissioner",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\SJ Salute Number 3 - Salute for Chief Commissioner.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "SJ Salute Number 4 - Salute for Commissioner",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\SJ Salute Number 4 - Salute for Commissioner.wav",
+    "category": "Salutes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Slow March - 3 Mins",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Slow March - 3 Mins.wav",
+    "category": "Drum Solo",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Spot On",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Spot On.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Standing Victorious",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Standing Victorious.wav",
+    "category": "Inspection Tunes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Tentera Singapura",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Tentera Singapura.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Triumphant Spirit",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Triumphant Spirit.wav",
+    "category": "Inspection Tunes",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Trust Me Singapore",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Trust Me Singapore.wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Untuk Rakyat Dan Negara(Enhanced)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Untuk Rakyat Dan Negara(Enhanced).wav",
+    "category": "Slow March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "Upward and Onward",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\Upward and Onward.wav",
+    "category": "Others",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "We Are One (OCS)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\We Are One (OCS).wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "We Are One",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\We Are One.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "We Are Singapore",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\We Are Singapore.wav",
+    "category": "Fast March",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  },
+  {
+    "title": "We the People (Non Instrumental)",
+    "path": "C:\\Users\\baron\\Downloads\\Parade_Suite_Windows_v0.104\\parade_editor_prototype\\music_library\\We the People (Non Instrumental).wav",
+    "category": "Interlude Music",
+    "allow_continue": false,
+    "allow_repeat": true,
+    "allow_end": true
+  }
+]
