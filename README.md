@@ -428,3 +428,18 @@ metadata/display titles throughout the Music Library, Parade Sequence, Parade
 Manager playlist, Now Playing, Next Track and Interlude selection.
 
 No Supabase migration is required.
+
+
+## v0.135 — 5-Second Interlude Restore Fade
+
+When an Interlude has been faded to 10%, `Restore Interlude` now fades smoothly
+back to the configured Default % over **5 seconds**.
+
+The restore uses the same smoothstep fade curve as the Interlude fade-down.
+
+Example:
+- Interlude Default = 60%
+- Fade → 10% over 5 seconds
+- Restore Interlude → 60% over 5 seconds
+
+No Supabase migration is required.

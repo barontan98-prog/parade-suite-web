@@ -1043,9 +1043,10 @@ export default function Home() {
     }
 
     const target = interludeDefault / 100;
+    setStatus(`INTERLUDE RESTORING TO ${interludeDefault}% • 5 seconds`);
     await audio.current?.restoreInterludeVolume(
       target,
-      800,
+      5000,
       (value) => setInterludeLive(Math.round(value * 100))
     );
     setInterludeLive(interludeDefault);
@@ -1152,7 +1153,7 @@ export default function Home() {
       <header className="topbar">
         <div>
           <h1>Parade Suite</h1>
-          <span className="version">Web v0.134 • Sequence-Only Parade Files + Music Filenames</span>
+          <span className="version">Web v0.135 • 5s Interlude Restore Fade + Sequence Files</span>
         </div>
 
         <div className="topbar-access">
