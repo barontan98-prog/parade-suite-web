@@ -382,3 +382,9 @@ small, .hint { color: var(--muted); font-size: 12px; }
     max-height: 48vh;
   }
 }
+
+/* v0.133 shared interlude controls */
+.interlude-restore-btn {
+  background: #0f766e !important;
+  border-color: #14b8a6 !important;
+}

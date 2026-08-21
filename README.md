@@ -374,3 +374,57 @@ landscape so a long parade playlist no longer pushes operational controls below
 the screen.
 
 No Supabase migration is required.
+
+
+## v0.133 — Shared Interlude Transport + 10% Fade
+
+Interlude now uses the same main Parade Manager transport controls as normal music:
+
+- Main `Play` on an Interlude track starts it looping.
+- Main `Stop` on an Interlude track performs the 5-second fade-to-stop and selects the next track.
+- The dedicated Interlude Play/Stop buttons have been removed.
+- Main `Fade` on an Interlude track fades the Interlude to **10%** over 5 seconds without stopping it.
+- A `Restore Interlude to <Default>%` action appears only when an Interlude track is selected and returns the live Interlude level to its configured Default %.
+- Main `Fade` on normal parade music remains the existing 5-second fade-to-stop.
+
+No Supabase migration is required.
+
+
+## v0.134 — Sequence-Only Parade Files
+
+`Save Parade` now exports only the Parade Sequence. It does not embed music,
+timing maps, drum cues, Supabase records, or any other library content.
+
+Cross-platform file format:
+
+```json
+{
+  "type": "parade-suite-sequence",
+  "version": 2,
+  "sequence": [
+    {
+      "track": "Advance Call.wav",
+      "action": "End"
+    },
+    {
+      "track": "Marching With Pride.wav",
+      "action": "Repeat"
+    }
+  ]
+}
+```
+
+`Open Parade` matches each saved filename against music already present in the
+web Music Library and rebuilds the Supabase Parade Sequence. The Music Library
+itself is never replaced.
+
+Missing tracks do not prevent the rest of the parade from loading. They are
+reported in the Parade Manager status.
+
+This v2 format is shared with the Windows v0.107 build.
+
+The web UI now displays the actual music filename (`source_name`) rather than
+metadata/display titles throughout the Music Library, Parade Sequence, Parade
+Manager playlist, Now Playing, Next Track and Interlude selection.
+
+No Supabase migration is required.

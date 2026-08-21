@@ -325,6 +325,49 @@ export class AudioEngine {
     return !this.interlude.paused && !this.interlude.ended;
   }
 
+  async fadeInterludeToLevel(
+    targetVolume: number,
+    durationMs = this.interludeFadeDurationMs,
+    onVolume?: (value: number) => void
+  ) {
+    if (!this.isInterludePlaying()) return;
+
+    const target = Math.max(0, Math.min(1, targetVolume));
+    await this.fade(
+      this.interlude,
+      this.interlude.volume,
+      target,
+      durationMs,
+      onVolume
+    );
+    this.interlude.volume = target;
+    onVolume?.(target);
+  }
+
+  async restoreInterludeVolume(
+    targetVolume: number,
+    durationMs = 800,
+    onVolume?: (value: number) => void
+  ) {
+    const target = Math.max(0, Math.min(1, targetVolume));
+
+    if (!this.isInterludePlaying()) {
+      this.interlude.volume = target;
+      onVolume?.(target);
+      return;
+    }
+
+    await this.fade(
+      this.interlude,
+      this.interlude.volume,
+      target,
+      durationMs,
+      onVolume
+    );
+    this.interlude.volume = target;
+    onVolume?.(target);
+  }
+
   async fadeInterludeToStop(
     durationMs = this.interludeFadeDurationMs,
     onVolume?: (value: number) => void

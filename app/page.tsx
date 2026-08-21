@@ -67,11 +67,52 @@ function defaultAction(track: Track): TrackAction {
 
 
 
+
+type ParadeSequenceFile = {
+  type: "parade-suite-sequence";
+  version: 2;
+  name?: string;
+  sequence: Array<{
+    track: string;
+    action: TrackAction;
+  }>;
+};
+
+function basenameFromUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const raw = url.pathname.split("/").pop() || "";
+    return decodeURIComponent(raw).replace(/^[0-9a-f-]{30,}-/i, "");
+  } catch {
+    return value.split("/").pop() || value;
+  }
+}
+
+function musicFileName(track: Track | null | undefined) {
+  if (!track) return "";
+  const source = (track.source_name || "").trim();
+  if (source) return source;
+  const fromUrl = basenameFromUrl(track.file_url || "").trim();
+  return fromUrl || track.title;
+}
+
+function normalizedMusicFileName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^.*[\\/]/, "")
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 export default function Home() {
   const audio = useRef<AudioEngine | null>(null);
   const scheduledTimers = useRef<number[]>([]);
   const endingGeneration = useRef(0);
   const pendingEndingRef = useRef(false);
+  const paradeFileInput = useRef<HTMLInputElement | null>(null);
 
   const [tab, setTab] = useState<"editor" | "manager">("editor");
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -376,7 +417,124 @@ export default function Home() {
     } catch (error) {
       console.error("Preview playback failed", error);
       setPreviewTrackId(null);
-      setStatus(`PREVIEW FAILED • ${track.title}`);
+      setStatus(`PREVIEW FAILED • ${musicFileName(track)}`);
+    }
+  }
+
+  function saveParadeSequence() {
+    const entries = sequence
+      .map((item) => {
+        const track = tracks.find((candidate) => candidate.id === item.track_id);
+        if (!track) return null;
+        return {
+          track: musicFileName(track),
+          action: item.action,
+        };
+      })
+      .filter(
+        (entry): entry is { track: string; action: TrackAction } =>
+          Boolean(entry?.track)
+      );
+
+    const payload: ParadeSequenceFile = {
+      type: "parade-suite-sequence",
+      version: 2,
+      sequence: entries,
+    };
+
+    const blob = new Blob(
+      [JSON.stringify(payload, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "parade.parade.json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+
+    setStatus(`SAVED PARADE SEQUENCE • ${entries.length} tracks`);
+  }
+
+  async function openParadeSequence(file: File | null | undefined) {
+    if (!file) return;
+
+    try {
+      const raw = JSON.parse(await file.text()) as Partial<ParadeSequenceFile>;
+
+      if (
+        raw.type !== "parade-suite-sequence" ||
+        raw.version !== 2 ||
+        !Array.isArray(raw.sequence)
+      ) {
+        throw new Error(
+          "This is not a Parade Suite sequence-only file (version 2)."
+        );
+      }
+
+      const trackByName = new Map<string, Track>();
+      for (const track of tracks) {
+        const filename = musicFileName(track);
+        const key = normalizedMusicFileName(filename);
+        if (key && !trackByName.has(key)) {
+          trackByName.set(key, track);
+        }
+      }
+
+      const resolved: SequenceItem[] = [];
+      const missing: string[] = [];
+
+      for (let position = 0; position < raw.sequence.length; position += 1) {
+        const entry = raw.sequence[position];
+        if (!entry || typeof entry.track !== "string") continue;
+
+        const key = normalizedMusicFileName(entry.track);
+        const track = trackByName.get(key);
+
+        if (!track) {
+          missing.push(entry.track);
+          continue;
+        }
+
+        const requestedAction = entry.action;
+        const actions = allowedActions(track);
+        const action: TrackAction =
+          requestedAction && actions.includes(requestedAction)
+            ? requestedAction
+            : defaultAction(track);
+
+        resolved.push({
+          id: crypto.randomUUID(),
+          track_id: track.id,
+          action,
+          position: resolved.length,
+        });
+      }
+
+      // Replace only the Parade Sequence. Music/library records are untouched.
+      await Promise.all(sequence.map((item) => deleteSequenceItem(item.id)));
+
+      const saved: SequenceItem[] = [];
+      for (const item of resolved) {
+        saved.push(await saveSequenceItem(item));
+      }
+
+      setSequence(saved);
+      setSelectedIndex(saved.length ? 0 : null);
+
+      if (missing.length) {
+        setStatus(
+          `PARADE LOADED • ${saved.length} ready • ${missing.length} missing: ${missing.join(", ")}`
+        );
+      } else {
+        setStatus(`PARADE READY • ${saved.length} tracks matched automatically`);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to open parade file.";
+      setStatus(`OPEN PARADE FAILED • ${message}`);
     }
   }
 
@@ -602,11 +760,17 @@ export default function Home() {
   }
 
   async function playSelected() {
+    if (selectedTrack && isInterludeTrack(selectedTrack)) {
+      await playInterlude();
+      return;
+    }
+
     if (selectedIndex === null) return;
 
     // Direct user gesture unlock for iOS/iPadOS Safari cue playback.
     await audio.current?.prepareCueAudio();
     await playIndex(selectedIndex);
+ 
   }
 
   function handleNaturalEnd(index: number) {
@@ -835,6 +999,59 @@ export default function Home() {
     setStatus("Ending cancelled");
   }
 
+  async function stopSelected() {
+    if (selectedTrack && isInterludeTrack(selectedTrack)) {
+      await stopInterlude();
+      return;
+    }
+
+    audio.current?.stopMain();
+    setStatus("STOPPED");
+  }
+
+  async function fadeSelected() {
+    if (selectedTrack && isInterludeTrack(selectedTrack)) {
+      if (!audio.current?.isInterludePlaying()) {
+        setStatus("INTERLUDE NOT PLAYING");
+        return;
+      }
+
+      setStatus("INTERLUDE FADING TO 10% • 5 seconds");
+      await audio.current.fadeInterludeToLevel(
+        0.10,
+        5000,
+        (value) => setInterludeLive(Math.round(value * 100))
+      );
+      setStatus("INTERLUDE AT 10%");
+      return;
+    }
+
+    clearScheduledTimers();
+    endingGeneration.current += 1;
+    setEndingQueued(false);
+    audio.current?.setRepeatSuppressed(true);
+    setStatus("FADING • 5 seconds • music will stop");
+    await audio.current?.fadeMainToStop(5000);
+    audio.current?.setRepeatSuppressed(false);
+    setStatus("FADED OUT • stopped");
+  }
+
+  async function restoreInterludeDefault() {
+    if (!selectedTrack || !isInterludeTrack(selectedTrack)) {
+      setStatus("SELECT AN INTERLUDE TRACK");
+      return;
+    }
+
+    const target = interludeDefault / 100;
+    await audio.current?.restoreInterludeVolume(
+      target,
+      800,
+      (value) => setInterludeLive(Math.round(value * 100))
+    );
+    setInterludeLive(interludeDefault);
+    setStatus(`INTERLUDE RESTORED TO ${interludeDefault}%`);
+  }
+
   async function playInterlude() {
     if (!selectedTrack || !isInterludeTrack(selectedTrack)) {
       setStatus("SELECT AN INTERLUDE TRACK FROM THE PLAYLIST");
@@ -935,7 +1152,7 @@ export default function Home() {
       <header className="topbar">
         <div>
           <h1>Parade Suite</h1>
-          <span className="version">Web v0.132 • iPad Controls + Interlude Fix + Music Preview</span>
+          <span className="version">Web v0.134 • Sequence-Only Parade Files + Music Filenames</span>
         </div>
 
         <div className="topbar-access">
@@ -976,6 +1193,26 @@ export default function Home() {
               </div>
 
               <div className="import-buttons">
+                <button className="button" onClick={saveParadeSequence}>
+                  Save Parade
+                </button>
+                <button
+                  className="button"
+                  onClick={() => paradeFileInput.current?.click()}
+                >
+                  Open Parade
+                </button>
+                <input
+                  ref={paradeFileInput}
+                  hidden
+                  type="file"
+                  accept=".json,.parade.json,application/json"
+                  onChange={(e) => {
+                    void openParadeSequence(e.target.files?.[0]);
+                    e.currentTarget.value = "";
+                  }}
+                />
+
                 <label className={`button primary ${uploadBusy ? "disabled" : ""}`}>
                   {uploadBusy ? "Uploading…" : "+ Import Music"}
                   <input
@@ -1065,7 +1302,7 @@ export default function Home() {
               {filteredTracks.map((track) => (
                 <div className="library-row" key={track.id}>
                   <div>
-                    <strong>{track.title}</strong>
+                    <strong>{musicFileName(track)}</strong>
                     <small>{track.category}</small>
                   </div>
 
@@ -1126,7 +1363,7 @@ export default function Home() {
                     </span>
 
                     <div className="seq-title">
-                      <strong>{track.title}</strong>
+                      <strong>{musicFileName(track)}</strong>
                       <small>{track.category}</small>
                     </div>
 
@@ -1178,7 +1415,7 @@ export default function Home() {
                       onClick={() => setSelectedIndex(index)}
                     >
                       <span>{String(index + 1).padStart(2, "0")}.</span>
-                      <span className="grow">{track.title}</span>
+                      <span className="grow">{musicFileName(track)}</span>
                       <span
                         className={`action-tag ${item.action.toLowerCase()}`}
                       >
@@ -1197,21 +1434,13 @@ export default function Home() {
             <h2>Interlude Music</h2>
 
             <p className="hint center">
-              Loaded from the Parade Manager playlist. Loops continuously; Stop
-              fades out over 5 seconds.
+              Uses the main Play / Stop controls. Play loops continuously; Stop fades out over 5 seconds. Fade lowers Interlude to 10%.
             </p>
 
             <div className="interlude-name">
               {isInterludeTrack(selectedTrack)
-                ? selectedTrack?.title
+                ? musicFileName(selectedTrack)
                 : "Select an Interlude track from the playlist"}
-            </div>
-
-            <div className="interlude-buttons">
-              <button className="primary" onClick={playInterlude}>
-                ▶ Play / Loop
-              </button>
-              <button onClick={stopInterlude}>■ Stop</button>
             </div>
 
             <label className="default-box">
@@ -1270,19 +1499,19 @@ export default function Home() {
 
                   <button
                     className="big-btn primary"
-                    onClick={async () => {
-                      clearScheduledTimers();
-                      endingGeneration.current += 1;
-                      setEndingQueued(false);
-                      audio.current?.setRepeatSuppressed(true);
-                      setStatus("FADING • 5 seconds • music will stop");
-                      await audio.current?.fadeMainToStop(5000);
-                      audio.current?.setRepeatSuppressed(false);
-                      setStatus("FADED OUT • stopped");
-                    }}
+                    onClick={() => void fadeSelected()}
                   >
                     Fade
                   </button>
+
+                  {selectedTrack && isInterludeTrack(selectedTrack) && (
+                    <button
+                      className="big-btn interlude-restore-btn"
+                      onClick={() => void restoreInterludeDefault()}
+                    >
+                      Restore Interlude to {interludeDefault}%
+                    </button>
+                  )}
 
                   {endingQueued && (
                     <button className="big-btn" onClick={cancelEnding}>
@@ -1327,8 +1556,9 @@ export default function Home() {
               </div>
 
               <div className="current-title">
-                {selectedTrack?.title ??
-                  (sequence.length ? "Ready" : "No Parade Music Loaded")}
+                {selectedTrack
+                  ? musicFileName(selectedTrack)
+                  : (sequence.length ? "Ready" : "No Parade Music Loaded")}
               </div>
 
               <div className="status">
@@ -1340,7 +1570,7 @@ export default function Home() {
 
               <div className="next-track">
                 {nextTrack
-                  ? `Next: ${nextTrack.title}`
+                  ? `Next: ${musicFileName(nextTrack)}`
                   : "Next: End of parade"}
               </div>
 
@@ -1359,7 +1589,7 @@ export default function Home() {
               <button className="play" onClick={playSelected}>
                 ▶ Play
               </button>
-              <button onClick={() => audio.current?.stopMain()}>
+              <button onClick={() => void stopSelected()}>
                 ■ Stop
               </button>
               <button
