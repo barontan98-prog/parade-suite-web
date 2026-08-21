@@ -316,3 +316,21 @@ Important:
 The root-level `legacy_timing_maps/` workflow from v0.129 is retained.
 
 No Supabase SQL migration is required.
+
+
+## v0.131 — User-Supplied Built-in LIB Set
+
+The entire root-level `legacy_timing_maps/` folder has been replaced with the
+user-supplied `legacy_timing_maps.zip`.
+
+The Vercel prebuild process remains:
+
+`legacy_timing_maps/*.lib`
+→ `public/generated_timing_maps/*.lib`
+→ generated `index.json`
+→ Parade Suite runtime
+
+This means the uploaded LIB filenames are now the authoritative built-in timing
+maps used by the webapp.
+
+No Supabase SQL migration is required.

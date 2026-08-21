@@ -888,7 +888,7 @@ export default function Home() {
       <header className="topbar">
         <div>
           <h1>Parade Suite</h1>
-          <span className="version">Web v0.130 • Signed Upload Fix + Root LIB Folder</span>
+          <span className="version">Web v0.131 • User LIB Set + Signed Upload Fix</span>
         </div>
 
         <div className="topbar-access">
