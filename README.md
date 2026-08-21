@@ -443,3 +443,22 @@ Example:
 - Restore Interlude → 60% over 5 seconds
 
 No Supabase migration is required.
+
+
+## v0.136 — End Song for Interlude
+
+When the selected track is Interlude Music:
+
+- `End Song` now uses the same behavior as the main `Stop` button.
+- Interlude fades smoothly to 0% over 5 seconds.
+- Playback stops.
+- Interlude volume resets to the configured Default % for next use.
+- The next playlist item is selected and prepared.
+- The next item does **not** auto-play.
+
+Normal parade music `End Song` remains unchanged and continues to use the
+beat-synchronised Ending Beat logic.
+
+`Next Song` behavior is unchanged.
+
+No Supabase migration is required.

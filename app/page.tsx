@@ -887,6 +887,21 @@ export default function Home() {
 
   function requestMusicalEnding(action: "end" | "next") {
     const engine = audio.current;
+
+    // Interlude End Song intentionally behaves like the Interlude Stop button:
+    // fade to silence over 5 seconds, stop, reset to Default %, then select
+    // the next playlist item without auto-playing it.
+    if (
+      action === "end" &&
+      engine &&
+      selectedIndex !== null &&
+      selectedTrack &&
+      isInterludeTrack(selectedTrack)
+    ) {
+      void stopInterlude();
+      return;
+    }
+
     void engine?.prepareCueAudio();
 
     if (
@@ -1153,7 +1168,7 @@ export default function Home() {
       <header className="topbar">
         <div>
           <h1>Parade Suite</h1>
-          <span className="version">Web v0.135 • 5s Interlude Restore Fade + Sequence Files</span>
+          <span className="version">Web v0.136 • Interlude End Song Fade-Stop + Sequence Files</span>
         </div>
 
         <div className="topbar-access">
