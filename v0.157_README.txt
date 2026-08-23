@@ -1,0 +1,5 @@
+Parade Suite Web v0.157 — Compile Fix
+
+- Fixed TypeScript compile error in Parade Manager Now Playing action.
+- Action is read from the selected sequence item, not the Track object.
+- Retains v0.156 fit-to-screen Manager layout.
