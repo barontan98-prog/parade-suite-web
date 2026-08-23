@@ -830,6 +830,17 @@ export default function Home() {
       );
 
       if (match) {
+        // Imported LIB metadata should update the matched music-library row as
+        // well as its timing map.  Previously the browser import only persisted
+        // timing fields, so changing a LIB category (for example to
+        // "Interlude Music") did not update the Music Library UI.
+        const importedCategory = (() => {
+          const raw = (parsed.category || "").trim();
+          if (!raw) return undefined;
+          if (raw.toLowerCase() === "interlude") return "Interlude Music";
+          return CATEGORIES.includes(raw) ? raw : undefined;
+        })();
+
         const patch = {
           has_lib: true,
           has_timing_map: parsed.beatMap.length > 0,
@@ -840,6 +851,7 @@ export default function Home() {
           repeat_end_ms: parsed.repeatEndMs ?? null,
           repeat_mode: parsed.repeatMode ?? null,
           lib_name: `${displayMusicName(match)}.lib`,
+          ...(importedCategory ? { category: importedCategory } : {}),
         };
 
         try {
