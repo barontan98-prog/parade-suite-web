@@ -1172,3 +1172,94 @@ button.action-active,
     grid-template-columns: 1fr;
   }
 }
+
+/* v0.160 — Parade Editor overlap fix on iPad/tablet.
+   The Preview panel gets its own reserved row below the editor body, so it can
+   never overlap the Music Library / Parade Sequence controls. */
+.windows-editor {
+  height: calc(100dvh - 84px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.windows-title-row,
+.windows-upload-results,
+.windows-preview {
+  flex: 0 0 auto;
+}
+
+.windows-editor-main {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.windows-library-pane,
+.windows-sequence-pane {
+  min-height: 0;
+}
+
+/* The library remains a fixed visual box inside the available editor height,
+   but its contents scroll instead of making the page grow. */
+.windows-library-list {
+  flex: 1 1 auto;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.windows-sequence-table {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.windows-sequence-body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.windows-library-buttons,
+.windows-sequence-controls {
+  flex: 0 0 auto;
+}
+
+.windows-preview {
+  margin-top: 8px;
+  min-height: 78px;
+  position: relative;
+  z-index: 1;
+  background: #111827;
+}
+
+/* iPad/tablet landscape: slightly tighter controls so the entire editor fits
+   above the browser toolbar while keeping Preview fully visible. */
+@media (max-width: 1180px) {
+  .windows-editor {
+    height: calc(100dvh - 82px);
+    padding: 8px 10px 6px;
+  }
+
+  .windows-title-row {
+    min-height: 54px;
+  }
+
+  .windows-input {
+    height: 42px;
+  }
+
+  .windows-library-buttons button,
+  .windows-sequence-controls button,
+  .windows-preview button {
+    min-height: 46px;
+  }
+
+  .windows-preview {
+    min-height: 72px;
+  }
+}
