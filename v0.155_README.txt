@@ -1,0 +1,6 @@
+Parade Suite Web v0.155 — Clean Now Playing
+
+Changes:
+- Removed operational status messages from the Now Playing area.
+- Now Playing shows only the action itself: Repeat, End, or Interlude.
+- Next track line remains unchanged.

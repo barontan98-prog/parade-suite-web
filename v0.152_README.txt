@@ -1,0 +1,22 @@
+Parade Suite Web v0.152 — Windows v0.128 Parity
+
+This build mirrors the current Windows v0.128 interface and behavior as closely
+as the browser platform permits.
+
+Synchronized from Windows:
+- Editor layout and controls
+- Manager layout and controls
+- Extension-free music display names
+- 50% opacity category dropdown arrow
+- Light-blue action/cue/Restore Interlude button feedback
+- Transport buttons do not illuminate
+- Current legacy_timing_maps set (96 .lib files)
+- Current Windows music-library/category reference data
+
+Web-specific implementation:
+- + Import LIB uses a persistent browser legacy-map store because a deployed
+  Vercel browser app cannot write back into its source-code legacy_timing_maps
+  directory at runtime. Imported maps override bundled maps on that browser and
+  are also applied to matching persisted track timing records.
+- Library Folder reports the web music-library location rather than opening a
+  local filesystem folder.

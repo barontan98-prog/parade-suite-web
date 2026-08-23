@@ -1,0 +1,6 @@
+Parade Suite Web v0.154
+
+Parade Manager UI edits:
+1. Current action line now shows only Repeat or End in the track action colour (green/red), without the words "Sequence action".
+2. Interlude Music panel enlarged and stretched to align with the height of the panels to its left.
+3. Removed the helper sentence above the Interlude Music box.

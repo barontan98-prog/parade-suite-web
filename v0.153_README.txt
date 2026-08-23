@@ -1,0 +1,10 @@
+Parade Suite Web v0.153 — Remove Unsupported Web Controls
+
+Removed:
+- Library Folder
+
+Reason:
+The web app cannot reproduce the Windows Library Folder behavior exactly,
+because a browser/Vercel app cannot open the local Parade Suite filesystem.
+
+All other current Windows-parity controls remain unchanged.

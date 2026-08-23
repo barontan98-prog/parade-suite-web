@@ -1,0 +1,10 @@
+Parade Suite Web v0.151
+
+- Added newly supplied .lib timing maps into legacy_timing_maps.
+- Generator now indexes each .lib by:
+  1) filename,
+  2) internal title,
+  3) internal audio filename.
+- This allows historical internal filenames to still match current music names.
+- Duplicate UUID-named SJ Salute Number 1 timing file was not included.
+- No Supabase migration required.

@@ -1,0 +1,31 @@
+{
+  "version": "0.149",
+  "lib_strategy": {
+    "location": "project root, beside package.json",
+    "root_lib_files": 86,
+    "runtime": "prebuild scans root .lib files and generates public/generated_timing_maps",
+    "knights_exception_preserved": true
+  },
+  "removed_files": [
+    {
+      "path": "public/cues/original_single_beat.wav",
+      "bytes": 114704
+    },
+    {
+      "path": "public/cues/original_double_beat.wav",
+      "bytes": 123524
+    },
+    {
+      "path": "public/cues/original_ending_beat.wav",
+      "bytes": 660132
+    },
+    {
+      "path": "WINDOWS_WEB_MATCH_REPORT.json",
+      "bytes": 389
+    }
+  ],
+  "removed_duplicate_lib_directories": [
+    "legacy_timing_maps/",
+    "public/legacy_timing_maps/"
+  ]
+}

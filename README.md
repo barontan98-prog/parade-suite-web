@@ -474,3 +474,117 @@ If the Interlude has already stopped, pressing Stop / End Song still advances
 the selection to the next playlist item.
 
 The next track remains prepared only; it does not auto-play.
+
+
+## v0.138 — Main Music Fade Fix
+
+Fixed the Parade Manager `Fade` action for normal music tracks.
+
+The 5-second fade now:
+- suppresses Repeat before the fade starts;
+- stops the Repeat monitor during the fade;
+- invalidates pending drum-cue duck restoration so an old cue cannot restore
+  the music volume halfway through the fade;
+- fades both the main player and the Repeat crossfade/bridge player when both
+  are audible;
+- reaches 0% over 5 seconds and then hard-stops/unloads the music;
+- restores the engine's normal Music Volume setting for the next track.
+
+Interlude Fade/Restore behavior is unchanged.
+No Supabase migration is required.
+
+
+## v0.139 — iPhone/iPad Interlude Fade Fix
+
+Interlude audio is now routed through a WebAudio GainNode on iOS/iPadOS Safari.
+
+This fixes the issue where scripted changes to `HTMLAudioElement.volume` could
+update the UI slider but not produce an audible fade on iPhone/iPad.
+
+The following Interlude actions now use WebAudio gain automation:
+- Fade → current level to 10% over 5 seconds.
+- Restore Interlude → 10% back to Default % over 5 seconds.
+- Stop / End Song → current level to 0% over 5 seconds, then stop and select next.
+
+The persistent Interlude media element is still used for playback/looping, so
+Safari user-gesture playback compatibility is preserved.
+
+Normal music fade behavior from v0.138 is unchanged.
+No Supabase migration is required.
+
+
+## v0.141 — Light Blue Active Buttons
+
+Updated the active/illuminated action-button colour from yellow to light blue for clearer operator feedback.
+
+
+## v0.142 — Action + Drum Cue Lights Only
+
+Only the buttons in the Actions and Drum Cues panels illuminate. Transport controls (Previous, Play, Stop, Immediate Skip) and Restore Interlude no longer light up.
+
+
+## v0.143 — Restore Interlude Light
+
+Restore Interlude now also uses the light-blue active indication for the full 5-second restore action. Transport controls remain excluded.
+
+
+## v0.144 — End Song Action Light Fix
+
+The End Song / Next Song action button now illuminates immediately when clicked
+for normal marching tracks, before timing-map lookup and cue scheduling.
+The light remains active until the ending action completes, and clears on
+validation failure or cancellation.
+
+
+## v0.145 — Dedicated End/Next Song Light State
+
+End Song and Next Song now use a dedicated ending-action state instead of the
+generic button-light state. The button is illuminated for the entire queued
+musical-ending lifecycle and clears only when the ending completes, is
+cancelled, fails validation, or another track begins.
+
+
+## v0.146 — Smoother Repeat Handoff
+
+The Repeat transition keeps the bridge player active while the primary audio
+element restarts at the repeat position, then performs a second 220 ms crossfade
+back to the primary player. This replaces the old fixed 80 ms bridge release,
+which could be too short on iPhone/iPad Safari and cause a brief pause.
+
+The existing repeat timing points and .lib metadata are unchanged.
+
+
+## v0.147 — Old LIB Beat-Grid Repeat
+
+Integrated the uploaded legacy Parade Suite `.lib` set (86 files)
+as the authoritative repeat timing data.
+
+For tracks with a positive legacy repeat marker, Repeat now:
+1. reads the half-beat duration from that track's `.lib` timing row;
+2. begins the incoming copy one half-beat before the legacy repeat marker;
+3. begins the outgoing crossfade one matching half-beat before the loop end;
+4. reaches the legacy repeat marker exactly as the outgoing phrase completes;
+5. keeps the second-stage bridge handoff from v0.146.
+
+This is applied automatically per track rather than using one generic
+220 ms repeat window.
+
+The enhanced Knights of St John timing map is preserved because its original
+legacy `.lib` contains no usable timing rows.
+
+No Supabase migration is required.
+
+
+## v0.148 — Forced Legacy LIB Repeat
+
+For every track except Knights of St John, Repeat is now resolved directly
+from the bundled old `.lib` file at playback time. Stale `repeat_start_ms`
+values stored in Supabase are ignored for Repeat.
+
+The repeat bridge is also preloaded when the march starts. This is important
+on iPhone/iPad Safari: previously the second audio element could receive a seek
+before its metadata was ready, causing Safari to ignore the seek and restart
+from 0 seconds.
+
+Knights of St John keeps its newer custom timing behavior.
+No Supabase migration is required.
