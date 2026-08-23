@@ -55,6 +55,12 @@ export class AudioEngine {
   constructor() {
     this.interlude.loop = true;
 
+    // Interlude audio is routed through WebAudio for iPad/iPhone-safe fades.
+    // Set CORS mode before assigning any remote Supabase URL; otherwise Safari
+    // can allow the HTMLAudio element to "play" while the MediaElement source
+    // outputs silence through the AudioContext.
+    this.interlude.crossOrigin = "anonymous";
+
     this.main.preload = "auto";
     this.repeatPlayer.preload = "auto";
     this.interlude.preload = "auto";
@@ -591,13 +597,29 @@ export class AudioEngine {
     try { this.interlude.currentTime = 0; } catch {}
     this.interlude.loop = true;
 
-    await this.ensureInterludeAudioGraph();
-    this.interlude.volume = 1.0;
-    this.setInterludeGain(volume);
+    const targetVolume = Math.max(0, Math.min(1, volume));
 
-    // Called directly from the main Play button while an Interlude is selected.
-    // Keeping play() inside the user gesture is required by iOS/iPadOS Safari.
-    await this.interlude.play();
+    // IMPORTANT iOS/iPadOS Safari:
+    // invoke play() immediately while still inside the operator's Play-button
+    // gesture. Do not await AudioContext setup before making this call.
+    //
+    // The first play begins on the HTMLMediaElement; immediately afterwards we
+    // attach/resume the WebAudio GainNode used by Fade/Restore.
+    this.interlude.volume = targetVolume;
+    const playPromise = this.interlude.play();
+
+    await this.ensureInterludeAudioGraph();
+
+    // Once the media element is routed through WebAudio, keep its own volume at
+    // unity and control audible volume with the GainNode.
+    if (this.interludeGain) {
+      this.interlude.volume = 1.0;
+      this.setInterludeGain(targetVolume);
+    } else {
+      this.interlude.volume = targetVolume;
+    }
+
+    await playPromise;
   }
 
   setInterludeVolume(volume: number) {
