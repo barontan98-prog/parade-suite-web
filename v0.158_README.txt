@@ -1,0 +1,10 @@
+Parade Suite Web v0.158 — Interlude Playback Fix
+
+Fixes Interlude tracks showing as playing but producing no audible music,
+especially on iPad/iPhone Safari.
+
+Changes:
+- Interlude HTMLAudio uses anonymous CORS before WebAudio routing.
+- Play is invoked immediately inside the user's Play-button gesture.
+- AudioContext/GainNode setup happens after play() has been initiated.
+- Interlude Fade / Restore / Stop still use the WebAudio GainNode.
