@@ -44,8 +44,18 @@ for (const filename of libFiles) {
 
   fs.copyFileSync(src, dest);
 
-  const key = normalizeTrackName(filename);
-  if (key) index[key] = filename;
+  const content = fs.readFileSync(src, "utf8");
+  const lines = content.split(/\r?\n/);
+
+  const candidateKeys = [
+    normalizeTrackName(filename),
+    normalizeTrackName(lines[0] || ""),
+    normalizeTrackName(lines[1] || ""),
+  ].filter(Boolean);
+
+  for (const key of candidateKeys) {
+    index[key] = filename;
+  }
 }
 
 const ordered = Object.fromEntries(

@@ -1,5 +1,85 @@
 import type { BeatRow, Track } from "./types";
 
+const PARADE_IMPORTED_LIBS = "parade-suite-imported-libs-v0152";
+
+type ImportedLIBRecord = {
+  libName: string;
+  text: string;
+  keys: string[];
+};
+
+function readImportedLIBs(): ImportedLIBRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(PARADE_IMPORTED_LIBS) || "[]"
+    );
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function storeImportedLIB(
+  libName: string,
+  text: string,
+  parsed: ParsedLIB
+) {
+  if (typeof window === "undefined") return;
+
+  const keys = Array.from(
+    new Set(
+      [
+        normalizeTrackName(libName),
+        parsed.audioFileName ? normalizeTrackName(parsed.audioFileName) : "",
+        parsed.title ? normalizeTrackName(parsed.title) : "",
+      ].filter(Boolean)
+    )
+  );
+
+  const all = readImportedLIBs();
+  const next = all.filter(
+    (item) =>
+      item.libName.toLowerCase() !== libName.toLowerCase() &&
+      !item.keys.some((key) => keys.includes(key))
+  );
+
+  next.push({ libName, text, keys });
+  window.localStorage.setItem(PARADE_IMPORTED_LIBS, JSON.stringify(next));
+}
+
+function localImportedLIBForAudio(
+  audioName: string
+): { parsed: ParsedLIB; libName: string } | null {
+  if (typeof window === "undefined") return null;
+
+  const key = normalizeTrackName(audioName);
+  const all = readImportedLIBs();
+
+  let record = all.find((item) => item.keys.includes(key));
+
+  if (!record) {
+    const candidates: Array<[number, ImportedLIBRecord]> = [];
+    for (const item of all) {
+      for (const knownKey of item.keys) {
+        if (!knownKey) continue;
+        if (key.includes(knownKey) || knownKey.includes(key)) {
+          const score =
+            Math.min(key.length, knownKey.length) /
+            Math.max(key.length, knownKey.length);
+          if (score >= 0.72) candidates.push([score, item]);
+        }
+      }
+    }
+    candidates.sort((a, b) => b[0] - a[0]);
+    record = candidates[0]?.[1];
+  }
+
+  return record
+    ? { parsed: parseLegacyLIB(record.text), libName: record.libName }
+    : null;
+}
+
 export type ParsedLIB = {
   title?: string;
   audioFileName?: string;
@@ -151,6 +231,21 @@ export function nextPhraseBoundaryMs(
   return null;
 }
 
+export function legacyRepeatStartFromBeatMap(
+  beatMap: BeatRow[] | undefined
+): number {
+  for (const row of beatMap ?? []) {
+    if (
+      row.start_ms > 0 &&
+      row.full_ms >= 300 &&
+      row.full_ms <= 2000
+    ) {
+      return row.start_ms;
+    }
+  }
+  return 0;
+}
+
 export function repeatStartMsForTrack(track: Track): number {
   if (
     track.repeat_start_ms !== null &&
@@ -171,6 +266,9 @@ export function repeatStartMsForTrack(track: Track): number {
 export async function loadWindowsTimingMap(
   audioName: string
 ): Promise<{ parsed: ParsedLIB; libName: string } | null> {
+  const imported = localImportedLIBForAudio(audioName);
+  if (imported) return imported;
+
   try {
     const indexResponse = await fetch("/generated_timing_maps/index.json?v=0.129", {
       cache: "no-store",

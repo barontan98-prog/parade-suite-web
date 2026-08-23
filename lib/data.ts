@@ -64,6 +64,41 @@ export async function updateTrackTiming(
   return data;
 }
 
+export async function deleteTrack(
+  id: string,
+  fileUrl?: string | null
+): Promise<void> {
+  if (!supabase) {
+    writeLocal(
+      LOCAL_TRACKS,
+      readLocal<Track>(LOCAL_TRACKS).filter((x) => x.id !== id)
+    );
+    return;
+  }
+
+  // Remove the stored audio object when it belongs to the Parade Suite music bucket.
+  if (fileUrl) {
+    try {
+      const url = new URL(fileUrl);
+      const marker = "/storage/v1/object/public/music/";
+      const index = url.pathname.indexOf(marker);
+      if (index >= 0) {
+        const objectName = decodeURIComponent(
+          url.pathname.slice(index + marker.length)
+        );
+        if (objectName) {
+          await supabase.storage.from("music").remove([objectName]);
+        }
+      }
+    } catch {
+      // The database record is still deleted even if storage cleanup is unavailable.
+    }
+  }
+
+  const { error } = await supabase.from("tracks").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function listSequence(): Promise<SequenceItem[]> {
   if (!supabase) {
     return readLocal<SequenceItem>(LOCAL_SEQUENCE).sort((a, b) => a.position - b.position);

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createTrack,
+  deleteTrack,
   deleteSequenceItem,
   listSequence,
   listTracks,
@@ -19,6 +20,10 @@ import {
   nextQuantizedBeatMs,
   normalizeTrackName,
   repeatStartMsForTrack,
+  legacyRepeatStartFromBeatMap,
+  pairUploadedLIBToTrack,
+  parseLegacyLIB,
+  storeImportedLIB,
 } from "@/lib/timing";
 import type { SequenceItem, Track, TrackAction } from "@/lib/types";
 import { windowsMetadataForFile } from "@/lib/windowsLibrary";
@@ -96,6 +101,18 @@ function musicFileName(track: Track | null | undefined) {
   return fromUrl || track.title;
 }
 
+function displayMusicName(track: Track | null | undefined) {
+  const filename = musicFileName(track);
+  return filename.replace(/\.(wav|mp3|mp4|m4a|aac|flac|ogg)$/i, "");
+}
+
+function formatTimeMs(value: number) {
+  const totalSeconds = Math.max(0, Math.floor(value / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function normalizedMusicFileName(value: string) {
   return value
     .trim()
@@ -113,12 +130,16 @@ export default function Home() {
   const endingGeneration = useRef(0);
   const pendingEndingRef = useRef(false);
   const paradeFileInput = useRef<HTMLInputElement | null>(null);
+  const libFileInput = useRef<HTMLInputElement | null>(null);
 
   const [tab, setTab] = useState<"editor" | "manager">("editor");
   const [tracks, setTracks] = useState<Track[]>([]);
   const [sequence, setSequence] = useState<SequenceItem[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All Categories");
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
+  const [mainPositionMs, setMainPositionMs] = useState(0);
+  const [mainDurationMs, setMainDurationMs] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [syncStatus, setSyncStatus] = useState("Beat Sync: waiting for track");
@@ -129,6 +150,23 @@ export default function Home() {
   const [cueVolume, setCueVolume] = useState(100);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [endingQueued, setEndingQueued] = useState(false);
+  const [endingAction, setEndingAction] = useState<"end" | "next" | null>(null);
+  const [activeButtons, setActiveButtons] = useState<Set<string>>(
+    () => new Set()
+  );
+
+  function setButtonActive(name: string, active: boolean) {
+    setActiveButtons((current) => {
+      const next = new Set(current);
+      if (active) next.add(name);
+      else next.delete(name);
+      return next;
+    });
+  }
+
+  function buttonClass(base: string, name: string) {
+    return `${base}${activeButtons.has(name) ? " action-active" : ""}`;
+  }
 
   const [authChecked, setAuthChecked] = useState(false);
   const [accessUser, setAccessUser] = useState<AccessUser | null>(null);
@@ -190,6 +228,15 @@ export default function Home() {
   useEffect(() => {
     audio.current?.setMusicVolume(musicVolume / 100);
   }, [musicVolume]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setMainPositionMs(audio.current?.getMainPositionMs() ?? 0);
+      setMainDurationMs(audio.current?.getMainDurationMs() ?? 0);
+    }, 150);
+    return () => window.clearInterval(timer);
+  }, []);
+
 
   useEffect(() => {
     audio.current?.setCueVolume(cueVolume / 100);
@@ -352,7 +399,7 @@ export default function Home() {
       if (!windowsMap) {
         console.warn(
           `[Parade Suite] No built-in LIB match for "${sourceName}". ` +
-          `Expected normalized key from a file in public/legacy_timing_maps.`
+          `Expected normalized key from a file in legacy_timing_maps.`
         );
       }
 
@@ -541,7 +588,8 @@ export default function Home() {
   const filteredTracks = useMemo(() => {
     return tracks.filter((track) => {
       const textOk =
-        !search || track.title.toLowerCase().includes(search.toLowerCase());
+        !search ||
+        displayMusicName(track).toLowerCase().includes(search.toLowerCase());
       const categoryOk =
         category === "All Categories" || track.category === category;
       return textOk && categoryOk;
@@ -563,6 +611,17 @@ export default function Home() {
   const nextTrack = nextItem
     ? tracks.find((track) => track.id === nextItem.track_id) ?? null
     : null;
+
+  // Keep Now Playing clean: show only the sequence action itself.
+  const currentActionLabel = selectedTrack ? selectedTrack.action : "";
+  const currentActionClass =
+    currentActionLabel === "Repeat"
+      ? "action-repeat"
+      : currentActionLabel === "End"
+        ? "action-end"
+        : currentActionLabel === "Interlude"
+          ? "action-interlude"
+          : "";
 
   function clearScheduledTimers() {
     for (const timer of scheduledTimers.current) window.clearTimeout(timer);
@@ -676,6 +735,142 @@ export default function Home() {
   }
 
 
+  async function newParade() {
+    for (const item of sequence) {
+      await deleteSequenceItem(item.id);
+    }
+    setSequence([]);
+    setSelectedIndex(null);
+    setStatus("NEW PARADE");
+  }
+
+  async function clearParadeSequence() {
+    for (const item of sequence) {
+      await deleteSequenceItem(item.id);
+    }
+    setSequence([]);
+    setSelectedIndex(null);
+    setStatus("PARADE SEQUENCE CLEARED");
+  }
+
+  function selectedLibraryTrack() {
+    return tracks.find((track) => track.id === selectedLibraryId) ?? null;
+  }
+
+  async function previewSelectedLibraryTrack() {
+    const track = selectedLibraryTrack();
+    if (!track) {
+      setStatus("SELECT A MUSIC TRACK TO PREVIEW");
+      return;
+    }
+    await previewMusic(track);
+  }
+
+  async function addSelectedLibraryTrack() {
+    const track = selectedLibraryTrack();
+    if (!track) {
+      setStatus("SELECT A MUSIC TRACK TO ADD");
+      return;
+    }
+    await addTrackToSequence(track);
+  }
+
+  async function deleteSelectedLibraryTrack() {
+    const track = selectedLibraryTrack();
+    if (!track) {
+      setStatus("SELECT A MUSIC TRACK TO DELETE");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Delete ${musicFileName(track)} and remove it from Parade Suite?`
+      )
+    ) return;
+
+    const attached = sequence.filter((item) => item.track_id === track.id);
+    for (const item of attached) {
+      await deleteSequenceItem(item.id);
+    }
+
+    await deleteTrack(track.id, track.file_url);
+
+    setSequence((current) =>
+      current
+        .filter((item) => item.track_id !== track.id)
+        .map((item, index) => ({ ...item, position: index }))
+    );
+    setTracks((current) => current.filter((item) => item.id !== track.id));
+    setSelectedLibraryId(null);
+    setStatus(`DELETED • ${displayMusicName(track)}`);
+  }
+
+  async function importLIBFiles(fileList: FileList | null) {
+    if (!fileList?.length) return;
+
+    let imported = 0;
+    let matched = 0;
+    let unmatched = 0;
+    const updatedTracks = [...tracks];
+
+    for (const file of Array.from(fileList)) {
+      if (!file.name.toLowerCase().endsWith(".lib")) continue;
+
+      const text = await file.text();
+      const parsed = parseLegacyLIB(text);
+      const match = pairUploadedLIBToTrack(updatedTracks, file.name, parsed);
+
+      // Browser/Vercel cannot modify the deployed source folder at runtime.
+      // Store the imported map in Parade Suite's persistent browser legacy-map
+      // store; loadWindowsTimingMap checks this before the bundled folder.
+      storeImportedLIB(
+        match ? `${displayMusicName(match)}.lib` : file.name,
+        text,
+        parsed
+      );
+
+      if (match) {
+        const patch = {
+          has_lib: true,
+          has_timing_map: parsed.beatMap.length > 0,
+          timing_map: parsed.beatMap,
+          repeat_start_ms:
+            parsed.repeatStartMs ??
+            legacyRepeatStartFromBeatMap(parsed.beatMap),
+          repeat_end_ms: parsed.repeatEndMs ?? null,
+          repeat_mode: parsed.repeatMode ?? null,
+          lib_name: `${displayMusicName(match)}.lib`,
+        };
+
+        try {
+          const updated = await updateTrackTiming(match.id, patch);
+          const index = updatedTracks.findIndex((x) => x.id === match.id);
+          if (index >= 0) updatedTracks[index] = updated;
+        } catch {
+          const index = updatedTracks.findIndex((x) => x.id === match.id);
+          if (index >= 0) {
+            updatedTracks[index] = { ...updatedTracks[index], ...patch };
+          }
+        }
+        matched += 1;
+      } else {
+        unmatched += 1;
+      }
+
+      imported += 1;
+    }
+
+    setTracks(updatedTracks);
+    setStatus(
+      `IMPORTED ${imported} LIB MAP(S) • ${matched} matched • ${unmatched} stored by filename`
+    );
+  }
+
+  async function removeSelectedSequenceRow() {
+    if (selectedIndex === null) return;
+    await removeItem(selectedIndex);
+  }
+
   async function addTrackToSequence(track: Track) {
     const item = await saveSequenceItem({
       id: crypto.randomUUID(),
@@ -738,21 +933,56 @@ export default function Home() {
     clearScheduledTimers();
     endingGeneration.current += 1;
     setEndingQueued(false);
+    setEndingAction(null);
     audio.current?.setRepeatSuppressed(false);
+
+    const sourceName = track.source_name || `${track.title}.wav`;
+    const isKnights =
+      normalizeTrackName(sourceName) ===
+      normalizeTrackName("Knights of St John.wav");
+
+    // Repeat is resolved directly from the bundled legacy .lib at playback
+    // time so stale Supabase timing metadata can never force a track back to 0.
+    // Knights of St John is the sole exception and keeps its newer custom map.
+    const runtimeLIB = isKnights
+      ? null
+      : await loadWindowsTimingMap(sourceName);
+
+    const runtimeBeatMap =
+      runtimeLIB?.parsed.beatMap?.length
+        ? runtimeLIB.parsed.beatMap
+        : track.timing_map ?? [];
+
+    const runtimeRepeatStart = isKnights
+      ? repeatStartMsForTrack(track)
+      : legacyRepeatStartFromBeatMap(runtimeBeatMap);
+
+    const runtimeRepeatEnd = isKnights
+      ? track.repeat_end_ms
+      : runtimeLIB?.parsed.repeatEndMs ?? null;
+
+    const runtimeRepeatMode = isKnights
+      ? track.repeat_mode
+      : runtimeLIB?.parsed.repeatMode ?? null;
 
     await audio.current?.playMain(track.file_url, {
       action: item.action,
-      repeatStartMs: repeatStartMsForTrack(track),
-      repeatEndMs: track.repeat_end_ms,
-      repeatMode: track.repeat_mode,
+      repeatStartMs: runtimeRepeatStart,
+      repeatEndMs: runtimeRepeatEnd,
+      repeatMode: runtimeRepeatMode,
+      beatMap: runtimeBeatMap,
       onNaturalEnd: () => handleNaturalEnd(index),
     });
 
     setStatus(`Sequence action: ${item.action.toUpperCase()}`);
 
-    if (track.timing_map?.length) {
+    if (runtimeBeatMap.length) {
       setSyncStatus(
-        `Beat Sync: ACTIVE • ${track.lib_name || "timing map"} • ${track.timing_map.length} timing markers`
+        `Beat Sync: ACTIVE • ${
+          isKnights
+            ? (track.lib_name || "Knights custom timing")
+            : (runtimeLIB?.libName || "legacy timing map")
+        } • ${runtimeBeatMap.length} timing markers • repeat from ${(runtimeRepeatStart / 1000).toFixed(2)}s`
       );
     } else {
       setSyncStatus("Beat Sync: no matching .lib found");
@@ -760,17 +990,22 @@ export default function Home() {
   }
 
   async function playSelected() {
-    if (selectedTrack && isInterludeTrack(selectedTrack)) {
-      await playInterlude();
-      return;
+
+    try {
+      if (selectedTrack && isInterludeTrack(selectedTrack)) {
+        await playInterlude();
+        return;
+      }
+
+      if (selectedIndex === null) {
+          return;
+      }
+
+      await audio.current?.prepareCueAudio();
+      await playIndex(selectedIndex);
+    } catch (error) {
+      throw error;
     }
-
-    if (selectedIndex === null) return;
-
-    // Direct user gesture unlock for iOS/iPadOS Safari cue playback.
-    await audio.current?.prepareCueAudio();
-    await playIndex(selectedIndex);
- 
   }
 
   function handleNaturalEnd(index: number) {
@@ -798,6 +1033,14 @@ export default function Home() {
     const engine = audio.current;
     if (!engine) return;
 
+    const buttonName =
+      kind === "single"
+        ? "singleCue"
+        : kind === "double"
+          ? "doubleCue"
+          : "doubleDoubleCue";
+    setButtonActive(buttonName, true);
+
     // This tap unlocks and prepares the exact uploaded cue files.
     await engine.prepareCueAudio();
 
@@ -813,6 +1056,7 @@ export default function Home() {
     if (!engine.isMainPlaying()) {
       await engine.playCueFile(filename, 950, 0.30);
       setSyncStatus("Cue played immediately");
+      setButtonActive(buttonName, false);
       return;
     }
 
@@ -824,6 +1068,7 @@ export default function Home() {
     if (!beatMap.length) {
       await engine.playCueFile(filename, 950, 0.30);
       setSyncStatus("Beat Sync: no timing map — cue played immediately");
+      setButtonActive(buttonName, false);
       return;
     }
 
@@ -837,6 +1082,7 @@ export default function Home() {
 
     if (target === null) {
       await engine.playCueFile(filename, 950, 0.30);
+      setButtonActive(buttonName, false);
       return;
     }
 
@@ -883,9 +1129,23 @@ export default function Home() {
     setSyncStatus(
       `Beat Sync: ${kind === "doubleDouble" ? "2x Double" : kind === "double" ? "Double" : "Single"} queued at ${(target / 1000).toFixed(2)}s`
     );
+
+    const rowForLight = beatContextForPosition(beatMap, target);
+    const fullIntervalForLight = rowForLight?.full_ms ?? 500;
+    const lastCueDelay =
+      kind === "doubleDouble"
+        ? delay + (2 * fullIntervalForLight)
+        : delay;
+
+    window.setTimeout(
+      () => setButtonActive(buttonName, false),
+      Math.max(250, lastCueDelay + 1050)
+    );
   }
 
   function requestMusicalEnding(action: "end" | "next") {
+    const actionButtonName = action === "end" ? "end" : "nextSong";
+    setEndingAction(action);
     const engine = audio.current;
 
     // Interlude End Song intentionally behaves like the Interlude Stop button:
@@ -898,7 +1158,7 @@ export default function Home() {
       selectedTrack &&
       isInterludeTrack(selectedTrack)
     ) {
-      void stopInterlude();
+      void stopInterlude("end");
       return;
     }
 
@@ -909,7 +1169,10 @@ export default function Home() {
       !engine.isMainPlaying() ||
       selectedIndex === null ||
       !selectedTrack
-    ) return;
+    ) {
+      setEndingAction(null);
+      return;
+    }
 
     const beatMap = selectedTrack.timing_map ?? [];
     const position = engine.getMainPositionMs();
@@ -918,6 +1181,7 @@ export default function Home() {
       setStatus(
         "Beat map required • this track has no matching timing map, so Parade Suite cannot perform a beat-synchronised ending."
       );
+      setEndingAction(null);
       return;
     }
 
@@ -926,7 +1190,10 @@ export default function Home() {
     if (target === null) {
       target = nextQuantizedBeatMs(beatMap, position, 250);
     }
-    if (target === null) return;
+    if (target === null) {
+      setEndingAction(null);
+      return;
+    }
 
     const cueStart = Math.max(position, target - 110);
     const delay = Math.max(0, cueStart - position);
@@ -966,7 +1233,8 @@ export default function Home() {
         engine.hardStopMain();
         pendingEndingRef.current = false;
         setEndingQueued(false);
-
+        setEndingAction(null);
+  
         if (action === "next" && requestIndex + 1 < sequence.length) {
           setStatus("CURRENT SONG ENDED • starting next track");
           schedule(220, () => void playIndex(requestIndex + 1));
@@ -1000,7 +1268,8 @@ export default function Home() {
         pendingEndingRef.current = false;
         engine.hardStopMain();
         setEndingQueued(false);
-      }
+        setEndingAction(null);
+        }
     });
   }
 
@@ -1009,14 +1278,16 @@ export default function Home() {
     pendingEndingRef.current = false;
     clearScheduledTimers();
     setEndingQueued(false);
+    setEndingAction(null);
     audio.current?.cancelEndingCue();
     audio.current?.setRepeatSuppressed(false);
     setStatus("Ending cancelled");
   }
 
   async function stopSelected() {
+
     if (selectedTrack && isInterludeTrack(selectedTrack)) {
-      await stopInterlude();
+      await stopInterlude("stop");
       return;
     }
 
@@ -1025,9 +1296,11 @@ export default function Home() {
   }
 
   async function fadeSelected() {
+    setButtonActive("fade", true);
     if (selectedTrack && isInterludeTrack(selectedTrack)) {
       if (!audio.current?.isInterludePlaying()) {
         setStatus("INTERLUDE NOT PLAYING");
+        setButtonActive("fade", false);
         return;
       }
 
@@ -1038,6 +1311,7 @@ export default function Home() {
         (value) => setInterludeLive(Math.round(value * 100))
       );
       setStatus("INTERLUDE AT 10%");
+      setButtonActive("fade", false);
       return;
     }
 
@@ -1045,15 +1319,19 @@ export default function Home() {
     endingGeneration.current += 1;
     setEndingQueued(false);
     audio.current?.setRepeatSuppressed(true);
-    setStatus("FADING • 5 seconds • music will stop");
+    setStatus("MUSIC FADING TO 0% • 5 seconds");
     await audio.current?.fadeMainToStop(5000);
     audio.current?.setRepeatSuppressed(false);
     setStatus("FADED OUT • stopped");
+    setButtonActive("fade", false);
   }
 
   async function restoreInterludeDefault() {
+    setButtonActive("restore", true);
+
     if (!selectedTrack || !isInterludeTrack(selectedTrack)) {
       setStatus("SELECT AN INTERLUDE TRACK");
+      setButtonActive("restore", false);
       return;
     }
 
@@ -1066,6 +1344,7 @@ export default function Home() {
     );
     setInterludeLive(interludeDefault);
     setStatus(`INTERLUDE RESTORED TO ${interludeDefault}%`);
+    setButtonActive("restore", false);
   }
 
   async function playInterlude() {
@@ -1088,7 +1367,7 @@ export default function Home() {
     }
   }
 
-  async function stopInterlude() {
+  async function stopInterlude(origin: "stop" | "end" = "stop") {
     const currentIndex = selectedIndex;
 
     if (currentIndex === null) {
@@ -1132,6 +1411,7 @@ export default function Home() {
     } else {
       setStatus("INTERLUDE STOPPED • end of playlist");
     }
+
   }
 
   if (!authChecked) {
@@ -1183,488 +1463,464 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <h1>Parade Suite</h1>
-          <span className="version">Web v0.137 • Interlude Next Selection Fix + Sequence Files</span>
+    <main className="app-shell windows-parity">
+      <header className="windows-menubar">
+        <div className="windows-file-actions">
+          <button onClick={() => void newParade()}>New</button>
+          <button onClick={() => paradeFileInput.current?.click()}>Open</button>
+          <button onClick={saveParadeSequence}>Save</button>
         </div>
 
-        <div className="topbar-access">
-          <span className="signed-in-name">{accessUser.name}</span>
+        <div className="web-account-actions">
+          <span>{accessUser.name}</span>
           {accessUser.role === "admin" && (
-            <button className="button" onClick={() => void openAdmin()}>
-              Admin
-            </button>
+            <button onClick={() => void openAdmin()}>Admin</button>
           )}
-          <button className="button" onClick={() => void logout()}>
-            Log Out
-          </button>
+          <button onClick={() => void logout()}>Log Out</button>
         </div>
-
-        <nav className="tabs">
-          <button
-            className={tab === "editor" ? "active" : ""}
-            onClick={() => setTab("editor")}
-          >
-            Parade Editor
-          </button>
-          <button
-            className={tab === "manager" ? "active" : ""}
-            onClick={() => setTab("manager")}
-          >
-            Parade Manager
-          </button>
-        </nav>
       </header>
 
-      {tab === "editor" ? (
-        <section className="editor-grid">
-          <div className="panel">
-            <div className="panel-header">
-              <h2>Music Library</h2>
-              <div className="hint lib-source-note">
-                Timing maps: root legacy_timing_maps → generated runtime copy
-              </div>
+      <input
+        ref={paradeFileInput}
+        hidden
+        type="file"
+        accept=".json,.parade.json,application/json"
+        onChange={(e) => {
+          void openParadeSequence(e.target.files?.[0]);
+          e.currentTarget.value = "";
+        }}
+      />
 
-              <div className="import-buttons">
-                <button className="button" onClick={saveParadeSequence}>
-                  Save Parade
-                </button>
-                <button
-                  className="button"
-                  onClick={() => paradeFileInput.current?.click()}
-                >
-                  Open Parade
-                </button>
+      <input
+        ref={libFileInput}
+        hidden
+        multiple
+        type="file"
+        accept=".lib"
+        onChange={(e) => {
+          void importLIBFiles(e.target.files);
+          e.currentTarget.value = "";
+        }}
+      />
+
+      <nav className="windows-tabs">
+        <button
+          className={tab === "editor" ? "active" : ""}
+          onClick={() => setTab("editor")}
+        >
+          Editor
+        </button>
+        <button
+          className={tab === "manager" ? "active" : ""}
+          onClick={() => setTab("manager")}
+        >
+          Manager
+        </button>
+      </nav>
+
+      {tab === "editor" ? (
+        <section className="windows-editor">
+          <div className="windows-title-row">
+            <h1>PARADE EDITOR</h1>
+            <div className="windows-import-actions">
+              <label className={`win-btn ${uploadBusy ? "disabled" : ""}`}>
+                {uploadBusy ? "Uploading…" : "+ Import Music"}
                 <input
-                  ref={paradeFileInput}
                   hidden
+                  multiple
                   type="file"
-                  accept=".json,.parade.json,application/json"
+                  accept="audio/*,.wav,.mp3,.mp4,.m4a,.flac,.ogg"
+                  disabled={uploadBusy}
                   onChange={(e) => {
-                    void openParadeSequence(e.target.files?.[0]);
+                    void importMusic(e.target.files);
                     e.currentTarget.value = "";
                   }}
                 />
-
-                <label className={`button primary ${uploadBusy ? "disabled" : ""}`}>
-                  {uploadBusy ? "Uploading…" : "+ Import Music"}
-                  <input
-                    hidden
-                    multiple
-                    type="file"
-                    accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg"
-                    disabled={uploadBusy}
-                    onChange={(e) => {
-                      void importMusic(e.target.files);
-                      e.currentTarget.value = "";
-                    }}
-                  />
-                </label>
-
-
-              </div>
+              </label>
+              <button onClick={() => libFileInput.current?.click()}>
+                + Import LIB
+              </button>
             </div>
+          </div>
 
-            {(uploadBusy || uploadSuccesses.length > 0 || uploadFailures.length > 0) && (
-              <div className="upload-results">
-                <div className="upload-results-header">
-                  <strong>Upload Results</strong>
-                  <span className="hint">
-                    {uploadOverall.done} / {uploadOverall.total || uploadSuccesses.length + uploadFailures.length}
-                  </span>
-                </div>
-
-                {uploadBusy && uploadCurrent && (
-                  <>
-                    <div className="upload-current" title={uploadCurrent}>
-                      {uploadCurrent}
-                    </div>
-                    <div className="upload-progress-track">
-                      <div
-                        className="upload-progress-fill"
-                        style={{ width: `${uploadFilePercent}%` }}
-                      />
-                    </div>
-                    <div className="hint">{uploadFilePercent}%</div>
-                  </>
-                )}
-
-                {uploadSuccesses.length > 0 && (
-                  <details>
-                    <summary>Uploaded successfully ({uploadSuccesses.length})</summary>
-                    <div className="upload-result-list">
-                      {uploadSuccesses.map((name) => (
-                        <div key={`ok-${name}`}>✅ {name}</div>
-                      ))}
-                    </div>
-                  </details>
-                )}
-
-                {uploadFailures.length > 0 && (
-                  <details open>
-                    <summary>Failed ({uploadFailures.length})</summary>
-                    <div className="upload-result-list upload-errors">
-                      {uploadFailures.map((message) => (
-                        <div key={`err-${message}`}>❌ {message}</div>
-                      ))}
-                    </div>
-                  </details>
-                )}
+          {(uploadBusy || uploadSuccesses.length > 0 || uploadFailures.length > 0) && (
+            <div className="upload-results windows-upload-results">
+              <div className="upload-results-header">
+                <strong>Upload Results</strong>
+                <span className="hint">
+                  {uploadOverall.done} / {uploadOverall.total || uploadSuccesses.length + uploadFailures.length}
+                </span>
               </div>
-            )}
-
-            <input
-              className="input"
-              placeholder="Search music track…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            <select
-              className="input"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option>All Categories</option>
-              {CATEGORIES.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-
-            <div className="list">
-              {filteredTracks.map((track) => (
-                <div className="library-row" key={track.id}>
-                  <div>
-                    <strong>{musicFileName(track)}</strong>
-                    <small>{track.category}</small>
+              {uploadBusy && uploadCurrent && (
+                <>
+                  <div className="upload-current">{uploadCurrent}</div>
+                  <div className="upload-progress-track">
+                    <div
+                      className="upload-progress-fill"
+                      style={{ width: `${uploadFilePercent}%` }}
+                    />
                   </div>
+                </>
+              )}
+            </div>
+          )}
 
-                  <div className="row-actions">
-                    <span title={track.lib_name || "Timing map"}>
+          <div className="windows-editor-main">
+            <section className="windows-library-pane">
+              <label>Music Library</label>
+              <input
+                className="windows-input"
+                placeholder="Search music track..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select
+                className="windows-input windows-category-select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option>All Categories</option>
+                {CATEGORIES.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+
+              <div className="windows-library-list">
+                {filteredTracks.map((track) => (
+                  <button
+                    type="button"
+                    key={track.id}
+                    className={`windows-library-item ${
+                      selectedLibraryId === track.id ? "selected" : ""
+                    }`}
+                    onClick={() => setSelectedLibraryId(track.id)}
+                    onDoubleClick={() => void previewMusic(track)}
+                  >
+                    <span className="timing-icon">
                       {(track.has_lib || track.has_timing_map) ? "✅" : "❌"}
                     </span>
-                    <button
-                      className={`preview-btn ${previewTrackId === track.id ? "previewing" : ""}`}
-                      onClick={() => void previewMusic(track)}
-                      title="Preview music"
-                    >
-                      {previewTrackId === track.id ? "■ Stop" : "▶ Preview"}
-                    </button>
-                    <button
-                      className="icon-btn"
-                      onClick={() => addTrackToSequence(track)}
-                      title="Add to parade sequence"
-                    >
-                      ＋
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {!filteredTracks.length && (
-                <div className="empty">No tracks yet.</div>
-              )}
-            </div>
-          </div>
-
-          <div className="panel">
-            <div className="panel-header">
-              <h2>Parade Sequence</h2>
-              <span className="hint">Drag rows to reorder</span>
-            </div>
-
-            <div className="sequence-list">
-              {sequence.map((item, index) => {
-                const track = tracks.find((x) => x.id === item.track_id);
-                if (!track) return null;
-
-                return (
-                  <div
-                    key={item.id}
-                    className="sequence-row"
-                    draggable
-                    onDragStart={() => setDragIndex(index)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => {
-                      if (dragIndex !== null) void reorder(dragIndex, index);
-                      setDragIndex(null);
-                    }}
-                  >
-                    <span className="drag">☰</span>
-                    <span className="num">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-
-                    <div className="seq-title">
-                      <strong>{musicFileName(track)}</strong>
+                    <span className="windows-library-copy">
+                      <strong>{displayMusicName(track)}</strong>
                       <small>{track.category}</small>
-                    </div>
-
-                    <select
-                      className={`action-select ${item.action.toLowerCase()}`}
-                      value={item.action}
-                      onChange={(e) =>
-                        changeAction(item, e.target.value as TrackAction)
-                      }
-                    >
-                      {allowedActions(track).map((action) => (
-                        <option key={action}>{action}</option>
-                      ))}
-                    </select>
-
-                    <button
-                      className="delete-btn"
-                      onClick={() => removeItem(index)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                );
-              })}
-
-              {!sequence.length && (
-                <div className="empty">Add music from the library.</div>
-              )}
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="manager-layout">
-          <div className="manager-main">
-            <div className="panel manager-playlist-panel">
-              <h2>Playlist</h2>
-
-              <div className="playlist">
-                {sequence.map((item, index) => {
-                  const track = tracks.find((x) => x.id === item.track_id);
-                  if (!track) return null;
-
-                  return (
-                    <button
-                      key={item.id}
-                      className={`playlist-row ${
-                        selectedIndex === index ? "selected" : ""
-                      }`}
-                      onClick={() => setSelectedIndex(index)}
-                    >
-                      <span>{String(index + 1).padStart(2, "0")}.</span>
-                      <span className="grow">{musicFileName(track)}</span>
-                      <span
-                        className={`action-tag ${item.action.toLowerCase()}`}
-                      >
-                        [{item.action}]
-                      </span>
-                    </button>
-                  );
-                })}
+                    </span>
+                  </button>
+                ))}
               </div>
-            </div>
 
+              <div className="windows-library-buttons">
+                <button onClick={() => void deleteSelectedLibraryTrack()}>
+                  Delete
+                </button>
+                <button onClick={() => void addSelectedLibraryTrack()}>
+                  Add to Parade →
+                </button>
+              </div>
+            </section>
+
+            <section className="windows-sequence-pane">
+              <label>Parade Sequence</label>
+              <div className="windows-sequence-table">
+                <div className="windows-sequence-header">
+                  <span>#</span>
+                  <span>Track</span>
+                  <span>Action</span>
+                  <span>Category</span>
+                </div>
+
+                <div className="windows-sequence-body">
+                  {sequence.map((item, index) => {
+                    const track = tracks.find((x) => x.id === item.track_id);
+                    if (!track) return null;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`windows-sequence-row ${
+                          selectedIndex === index ? "selected" : ""
+                        }`}
+                        draggable
+                        onClick={() => setSelectedIndex(index)}
+                        onDragStart={() => setDragIndex(index)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => {
+                          if (dragIndex !== null) void reorder(dragIndex, index);
+                          setDragIndex(null);
+                        }}
+                      >
+                        <span>{index + 1}</span>
+                        <strong>{displayMusicName(track)}</strong>
+                        <select
+                          value={item.action}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) =>
+                            changeAction(item, e.target.value as TrackAction)
+                          }
+                        >
+                          {allowedActions(track).map((action) => (
+                            <option key={action}>{action}</option>
+                          ))}
+                        </select>
+                        <span>{track.category}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="windows-sequence-controls">
+                <button onClick={() => void removeSelectedSequenceRow()}>
+                  Remove
+                </button>
+                <span>Drag and drop rows to reorder the Parade Sequence</span>
+                <span className="spacer" />
+                <button onClick={() => void clearParadeSequence()}>
+                  Clear
+                </button>
+              </div>
+            </section>
           </div>
 
-          <aside className="manager-controls">
-            <div className="panel interlude-panel">
-            <h2>Interlude Music</h2>
-
-            <p className="hint center">
-              Uses the main Play / Stop controls. Play loops continuously; Stop fades out over 5 seconds. Fade lowers Interlude to 10%.
-            </p>
-
-            <div className="interlude-name">
-              {isInterludeTrack(selectedTrack)
-                ? musicFileName(selectedTrack)
-                : "Select an Interlude track from the playlist"}
-            </div>
-
-            <label className="default-box">
-              <strong>Default %</strong>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={interludeDefault}
-                onChange={(e) =>
-                  setInterludeDefault(
-                    Math.max(0, Math.min(100, Number(e.target.value)))
-                  )
-                }
-              />
-            </label>
-
-            <h3>Interlude Volume</h3>
-
-            <div className="scale">
-              <span>0</span>
-              <span>25</span>
-              <span>50</span>
-              <span>75</span>
-              <span>100</span>
-            </div>
-
+          <fieldset className="windows-preview">
+            <legend>Preview</legend>
+            <button onClick={() => void previewSelectedLibraryTrack()}>
+              ▶ Preview
+            </button>
+            <button
+              onClick={() => {
+                audio.current?.stopPreview();
+                setPreviewTrackId(null);
+              }}
+            >
+              ■ Stop
+            </button>
             <input
-              className="volume-slider"
               type="range"
               min="0"
-              max="100"
-              value={interludeLive}
-              onChange={(e) => setInterludeLive(Number(e.target.value))}
+              max="1000"
+              value={previewTrackId ? 1 : 0}
+              readOnly
             />
+            <span>
+              {previewTrackId
+                ? displayMusicName(tracks.find((t) => t.id === previewTrackId))
+                : ""}
+            </span>
+          </fieldset>
+        </section>
+      ) : (
+        <section className="windows-manager">
+          <div className="windows-manager-title">PARADE MANAGER</div>
 
-            <div className="live-value">{interludeLive}%</div>
-            </div>
-            <div className="action-grid">
-              <div className="panel">
-                <h2>Actions</h2>
-                <div className="stack">
+          <div className="windows-manager-body">
+            <div className="windows-manager-left">
+              <div className="windows-manager-top">
+                <fieldset className="windows-playlist-box">
+                  <legend>Playlist</legend>
+                  <div className="windows-playlist">
+                    {sequence.map((item, index) => {
+                      const track = tracks.find((x) => x.id === item.track_id);
+                      if (!track) return null;
+                      return (
+                        <button
+                          key={item.id}
+                          className={selectedIndex === index ? "selected" : ""}
+                          onClick={() => setSelectedIndex(index)}
+                        >
+                          <span>{String(index + 1).padStart(2, "0")}.</span>
+                          <span>{displayMusicName(track)}</span>
+                          <span>[{item.action}]</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                <fieldset className="windows-actions-box">
+                  <legend>Actions</legend>
                   <button
-                    className="big-btn primary"
+                    className={endingAction === "next" ? "action-active" : ""}
                     onClick={() => requestMusicalEnding("next")}
                   >
                     Next Song
                   </button>
-
                   <button
-                    className="big-btn primary"
+                    className={endingAction === "end" ? "action-active" : ""}
                     onClick={() => requestMusicalEnding("end")}
                   >
                     End Song
                   </button>
-
                   <button
-                    className="big-btn primary"
+                    className={activeButtons.has("fade") ? "action-active" : ""}
                     onClick={() => void fadeSelected()}
                   >
                     Fade
                   </button>
-
                   {selectedTrack && isInterludeTrack(selectedTrack) && (
                     <button
-                      className="big-btn interlude-restore-btn"
+                      className={`restore-button ${
+                        activeButtons.has("restore") ? "action-active" : ""
+                      }`}
                       onClick={() => void restoreInterludeDefault()}
                     >
-                      Restore Interlude to {interludeDefault}%
+                      Restore Interlude
                     </button>
                   )}
+                </fieldset>
 
-                  {endingQueued && (
-                    <button className="big-btn" onClick={cancelEnding}>
-                      Cancel Ending
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="panel">
-                <h2>Drum Cues</h2>
-                <div className="stack">
+                <fieldset className="windows-cues-box">
+                  <legend>Drum Cues</legend>
                   <button
-                    className="big-btn"
+                    className={activeButtons.has("singleCue") ? "action-active" : ""}
                     onClick={() => scheduleManualCue("single")}
                   >
                     Single Beat
                   </button>
                   <button
-                    className="big-btn"
+                    className={activeButtons.has("doubleCue") ? "action-active" : ""}
                     onClick={() => scheduleManualCue("double")}
                   >
                     Double Beat
                   </button>
                   <button
-                    className="big-btn"
+                    className={activeButtons.has("doubleDoubleCue") ? "action-active" : ""}
                     onClick={() => scheduleManualCue("doubleDouble")}
                   >
                     2x Double Beat
                   </button>
+                  <div className="windows-sync">
+                    {syncStatus}
+                  </div>
+                </fieldset>
+              </div>
 
+              <fieldset className="windows-now-playing">
+                <legend>Now Playing</legend>
+                <div className="counter">
+                  {selectedIndex !== null
+                    ? `${selectedIndex + 1} / ${sequence.length}`
+                    : `0 / ${sequence.length}`}
                 </div>
-              </div>
+                <div className="windows-current-title">
+                  {selectedTrack
+                    ? displayMusicName(selectedTrack)
+                    : "No Parade Music Loaded"}
+                </div>
+                <div className={`windows-current-action ${currentActionClass}`}>
+                  {currentActionLabel}
+                </div>
+                <div className="windows-next-track">
+                  {nextTrack
+                    ? `Next: ${displayMusicName(nextTrack)}`
+                    : "Next: —"}
+                </div>
+              </fieldset>
             </div>
 
-            <div className="panel now-playing">
-              <h2>Now Playing</h2>
-              <div className="counter">
-                {selectedIndex !== null
-                  ? `${selectedIndex + 1} / ${sequence.length}`
-                  : `0 / ${sequence.length}`}
-              </div>
-
-              <div className="current-title">
-                {selectedTrack
-                  ? musicFileName(selectedTrack)
-                  : (sequence.length ? "Ready" : "No Parade Music Loaded")}
-              </div>
-
-              <div className="status">
-                {status ||
-                  (selected
-                    ? `Sequence action: ${selected.action.toUpperCase()}`
-                    : "")}
-              </div>
-
-              <div className="next-track">
-                {nextTrack
-                  ? `Next: ${musicFileName(nextTrack)}`
-                  : "Next: End of parade"}
-              </div>
-
-              <div className="sync-status">{syncStatus}</div>
-            </div>
-
-            <div className="transport">
-              <button
-                onClick={() =>
-                  selectedIndex !== null &&
-                  setSelectedIndex(Math.max(0, selectedIndex - 1))
-                }
-              >
-                ⏮ Previous
-              </button>
-              <button className="play" onClick={playSelected}>
-                ▶ Play
-              </button>
-              <button onClick={() => void stopSelected()}>
-                ■ Stop
-              </button>
-              <button
-                onClick={() =>
-                  selectedIndex !== null &&
-                  setSelectedIndex(
-                    Math.min(sequence.length - 1, selectedIndex + 1)
-                  )
-                }
-              >
-                ⏭ Immediate Skip
-              </button>
-            </div>
-
-            <div className="volume-grid">
-              <label>
-                <span>Music Volume</span>
+            <aside className="windows-interlude-column">
+              <fieldset>
+                <legend>Interlude Music</legend>
+                <div className="interlude-name">
+                  {isInterludeTrack(selectedTrack)
+                    ? displayMusicName(selectedTrack)
+                    : "No Interlude Selected"}
+                </div>
+                <div className="interlude-playing-text">
+                  {audio.current?.isInterludePlaying()
+                    ? "Interlude Music Playing"
+                    : "No Interlude Music Playing"}
+                </div>
+                <label className="default-box">
+                  <strong>Default %</strong>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={interludeDefault}
+                    onChange={(e) =>
+                      setInterludeDefault(
+                        Math.max(0, Math.min(100, Number(e.target.value)))
+                      )
+                    }
+                  />
+                </label>
+                <h3>Interlude Volume</h3>
+                <div className="scale">
+                  <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+                </div>
                 <input
+                  className="volume-slider"
                   type="range"
                   min="0"
                   max="100"
-                  value={musicVolume}
-                  onChange={(e) => setMusicVolume(Number(e.target.value))}
+                  value={interludeLive}
+                  onChange={(e) => setInterludeLive(Number(e.target.value))}
                 />
-                <strong>{musicVolume}%</strong>
-              </label>
+                <div className="live-value">{interludeLive}%</div>
+              </fieldset>
+            </aside>
+          </div>
 
-              <label>
-                <span>Cue Volume</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={cueVolume}
-                  onChange={(e) => setCueVolume(Number(e.target.value))}
-                />
-                <strong>{cueVolume}%</strong>
-              </label>
-            </div>
-          </aside>
+          <div className="windows-manager-progress">
+            <span>{formatTimeMs(mainPositionMs)}</span>
+            <input
+              type="range"
+              min="0"
+              max={Math.max(1, mainDurationMs)}
+              value={Math.min(mainPositionMs, Math.max(1, mainDurationMs))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                audio.current?.seekMain(value);
+                setMainPositionMs(value);
+              }}
+            />
+            <span>{formatTimeMs(mainDurationMs)}</span>
+          </div>
+
+          <div className="windows-transport">
+            <button
+              onClick={() =>
+                selectedIndex !== null &&
+                setSelectedIndex(Math.max(0, selectedIndex - 1))
+              }
+            >
+              ⏮ Previous
+            </button>
+            <button onClick={playSelected}>▶ Play</button>
+            <button onClick={() => void stopSelected()}>■ Stop</button>
+            <button
+              onClick={() =>
+                selectedIndex !== null &&
+                setSelectedIndex(
+                  Math.min(sequence.length - 1, selectedIndex + 1)
+                )
+              }
+            >
+              Immediate Skip ⏭
+            </button>
+          </div>
+
+          <div className="windows-volume-row">
+            <label>
+              <span>Music Volume</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={musicVolume}
+                onChange={(e) => setMusicVolume(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              <span>Cue Volume</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={cueVolume}
+                onChange={(e) => setCueVolume(Number(e.target.value))}
+              />
+            </label>
+          </div>
         </section>
       )}
 

@@ -388,3 +388,770 @@ small, .hint { color: var(--muted); font-size: 12px; }
   background: #0f766e !important;
   border-color: #14b8a6 !important;
 }
+
+/* v0.141: active action feedback */
+button.action-active,
+.big-btn.action-active,
+.transport button.action-active,
+.transport .play.action-active,
+.interlude-restore-btn.action-active {
+  background: #93c5fd !important;
+  border-color: #bfdbfe !important;
+  color: #0f172a !important;
+  box-shadow: 0 0 0 2px rgba(147,197,253,.40), 0 0 18px rgba(96,165,250,.85) !important;
+  font-weight: 900 !important;
+}
+
+
+
+/* ============================================================
+   v0.152 — Windows v0.128 visual parity
+   ============================================================ */
+.windows-parity {
+  min-height: 100vh;
+  background: #111827;
+  color: #f9fafb;
+  font-size: 14px;
+}
+
+.windows-parity button,
+.windows-parity .win-btn {
+  background: #2563eb;
+  color: #f9fafb;
+  border: 0;
+  border-radius: 7px;
+  min-height: 50px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.windows-parity button:hover,
+.windows-parity .win-btn:hover {
+  background: #1d4ed8;
+}
+
+.windows-menubar {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0f172a;
+  padding: 0 6px;
+}
+
+.windows-file-actions,
+.web-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.windows-menubar button {
+  background: transparent;
+  min-height: 38px;
+  padding: 7px 14px;
+  border-radius: 0;
+}
+
+.web-account-actions {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.web-account-actions button {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.windows-tabs {
+  height: 42px;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  background: #111827;
+}
+
+.windows-tabs button {
+  min-height: 42px;
+  border-radius: 0;
+  background: #1f2937;
+  padding: 0 20px;
+  font-weight: 500;
+}
+
+.windows-tabs button.active {
+  background: #2563eb;
+}
+
+.windows-editor,
+.windows-manager {
+  padding: 10px 10px 6px;
+}
+
+.windows-title-row {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.windows-title-row h1,
+.windows-manager-title {
+  font-size: 14px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.windows-import-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.windows-import-actions button,
+.windows-import-actions .win-btn {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.windows-upload-results {
+  margin: 0 0 8px;
+}
+
+.windows-editor-main {
+  height: calc(100vh - 275px);
+  min-height: 420px;
+  display: grid;
+  grid-template-columns: minmax(320px, 31%) minmax(0, 69%);
+  gap: 22px;
+}
+
+.windows-library-pane,
+.windows-sequence-pane {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.windows-library-pane > label,
+.windows-sequence-pane > label {
+  font-size: 14px;
+}
+
+.windows-input {
+  width: 100%;
+  height: 46px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #f9fafb;
+  padding: 7px;
+  outline: none;
+}
+
+/* Same custom arrow placement as Windows, but 50% opacity. */
+.windows-category-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(249,250,251,.50) 50%),
+    linear-gradient(135deg, rgba(249,250,251,.50) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 19px,
+    calc(100% - 13px) 19px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.windows-library-list,
+.windows-sequence-table {
+  flex: 1;
+  min-height: 0;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.windows-library-list {
+  padding: 8px;
+}
+
+.windows-library-item {
+  width: 100%;
+  min-height: 64px !important;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  text-align: left;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  padding: 8px 6px !important;
+  font-weight: 400 !important;
+}
+
+.windows-library-item.selected {
+  background: rgba(37,99,235,.25) !important;
+  border-color: #3b82f6 !important;
+}
+
+.windows-library-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.windows-library-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windows-library-copy small {
+  color: #f9fafb;
+}
+
+.windows-library-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.windows-library-buttons button {
+  min-height: 50px;
+}
+
+.windows-sequence-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.windows-sequence-header,
+.windows-sequence-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0,1fr) 150px 190px;
+  align-items: center;
+}
+
+.windows-sequence-header {
+  min-height: 52px;
+  border-bottom: 1px solid #374151;
+}
+
+.windows-sequence-header span {
+  padding: 0 10px;
+  text-align: center;
+}
+
+.windows-sequence-header span:nth-child(2) {
+  text-align: left;
+}
+
+.windows-sequence-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.windows-sequence-row {
+  min-height: 44px;
+  border-bottom: 1px solid rgba(55,65,81,.55);
+}
+
+.windows-sequence-row.selected {
+  background: rgba(37,99,235,.20);
+}
+
+.windows-sequence-row > * {
+  padding: 0 10px;
+  min-width: 0;
+}
+
+.windows-sequence-row > span:first-child,
+.windows-sequence-row > span:last-child {
+  text-align: center;
+}
+
+.windows-sequence-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windows-sequence-row select {
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #374151;
+  border-radius: 5px;
+  padding: 7px;
+}
+
+.windows-sequence-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+}
+
+.windows-sequence-controls button {
+  min-height: 50px;
+}
+
+.windows-sequence-controls span {
+  color: #9ca3af;
+}
+
+.windows-sequence-controls .spacer {
+  flex: 1;
+}
+
+.windows-preview,
+.windows-manager fieldset {
+  border: 1px solid #374151;
+  border-radius: 8px;
+  margin: 10px 0 0;
+}
+
+.windows-preview {
+  min-height: 80px;
+  display: grid;
+  grid-template-columns: auto auto minmax(160px,1fr) 260px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+.windows-preview legend,
+.windows-manager legend {
+  padding: 0 6px;
+}
+
+.windows-preview button {
+  min-height: 50px;
+}
+
+.windows-preview input[type="range"] {
+  width: 100%;
+}
+
+.windows-preview > span {
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Manager */
+.windows-manager-title {
+  text-align: center;
+  margin: 2px 0 8px;
+  position: relative;
+}
+
+.windows-manager-title::after {
+  content: "";
+  display: block;
+  width: 260px;
+  max-width: 40vw;
+  height: 3px;
+  background: #f59e0b;
+  margin: 8px auto 0;
+}
+
+.windows-manager-body {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 390px;
+  gap: 14px;
+  min-height: 510px;
+}
+
+.windows-manager-left {
+  display: grid;
+  grid-template-rows: minmax(285px, 3fr) minmax(170px, 2fr);
+  gap: 10px;
+}
+
+.windows-manager-top {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 165px 165px;
+  gap: 7px;
+}
+
+.windows-manager fieldset {
+  margin: 0;
+  padding: 10px;
+  min-width: 0;
+}
+
+.windows-playlist-box,
+.windows-now-playing {
+  min-width: 0;
+}
+
+.windows-playlist {
+  height: 100%;
+  overflow: auto;
+}
+
+.windows-playlist button {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) auto;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 7px 8px;
+}
+
+.windows-playlist button.selected {
+  background: rgba(37,99,235,.25);
+  border-color: #3b82f6;
+}
+
+.windows-playlist button span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windows-actions-box,
+.windows-cues-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.windows-actions-box button,
+.windows-cues-box button {
+  min-height: 52px;
+}
+
+.windows-manager button.action-active {
+  background: #93c5fd !important;
+  border: 3px solid #bfdbfe !important;
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+.windows-sync {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.windows-now-playing {
+  display: grid;
+  align-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.windows-current-title {
+  font-size: clamp(36px, 4vw, 58px);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.windows-current-action {
+  min-height: 22px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.windows-current-action.action-repeat {
+  color: #22c55e;
+}
+
+.windows-current-action.action-end {
+  color: #ef4444;
+}
+
+.windows-current-action.action-interlude {
+  color: #93c5fd;
+}
+
+.windows-next-track {
+  font-size: 20px;
+}
+
+.windows-interlude-column {
+  padding-top: 0;
+  display: flex;
+}
+
+.windows-interlude-column fieldset {
+  flex: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.windows-interlude-column .interlude-name {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.interlude-playing-text {
+  text-align: center;
+  margin: 10px 0;
+  font-weight: 700;
+}
+
+.windows-manager-progress {
+  display: grid;
+  grid-template-columns: 50px 1fr 50px;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.windows-manager-progress span:first-child {
+  text-align: right;
+}
+
+.windows-transport {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.windows-transport button {
+  min-height: 54px;
+}
+
+/* Transport buttons deliberately do not use action-active light feedback. */
+.windows-volume-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 5px;
+}
+
+.windows-volume-row label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.windows-volume-row input {
+  width: 100%;
+}
+
+
+/* v0.156 manager fit-to-screen polish: keep all controls visible on iPad/tablet;
+   only the playlist should scroll. */
+.windows-manager {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 88px);
+  overflow: hidden;
+}
+
+.windows-manager-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-columns: minmax(0,1fr) 350px;
+  gap: 10px;
+}
+
+.windows-manager-left,
+.windows-manager-top,
+.windows-playlist-box,
+.windows-now-playing,
+.windows-interlude-column,
+.windows-interlude-column fieldset {
+  min-height: 0;
+}
+
+.windows-manager-left {
+  grid-template-rows: minmax(0,1fr) 185px;
+  gap: 8px;
+}
+
+.windows-manager-top {
+  grid-template-columns: minmax(0,1fr) 150px 150px;
+  gap: 6px;
+}
+
+.windows-playlist-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.windows-playlist {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.windows-manager fieldset {
+  padding: 8px 10px;
+}
+
+.windows-actions-box button,
+.windows-cues-box button {
+  min-height: 46px;
+  padding: 8px 6px;
+}
+
+.windows-sync {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.windows-now-playing {
+  gap: 6px;
+}
+
+.windows-current-title {
+  font-size: clamp(30px, 3.5vw, 50px);
+}
+
+.windows-current-action {
+  min-height: 18px;
+  font-size: 18px;
+}
+
+.windows-next-track {
+  font-size: 18px;
+}
+
+.windows-interlude-column fieldset {
+  justify-content: flex-start;
+}
+
+.windows-interlude-column .interlude-name {
+  min-height: 42px;
+}
+
+.interlude-playing-text {
+  margin: 6px 0 8px;
+}
+
+.default-box {
+  margin: 8px 0 10px;
+}
+
+.windows-manager-progress,
+.windows-transport,
+.windows-volume-row {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1180px) {
+  .windows-manager {
+    height: calc(100dvh - 82px);
+    padding: 8px 8px 6px;
+  }
+
+  .windows-manager-body {
+    grid-template-columns: minmax(0,1fr) 320px;
+    gap: 8px;
+  }
+
+  .windows-manager-left {
+    grid-template-rows: minmax(0,1fr) 170px;
+  }
+
+  .windows-manager-top {
+    grid-template-columns: minmax(0,1fr) 142px 142px;
+  }
+
+  .windows-actions-box button,
+  .windows-cues-box button,
+  .windows-transport button {
+    min-height: 42px;
+  }
+
+  .windows-current-title {
+    font-size: clamp(26px, 3.2vw, 42px);
+  }
+
+  .windows-current-action,
+  .windows-next-track {
+    font-size: 16px;
+  }
+
+  .windows-volume-row {
+    gap: 10px;
+  }
+
+  .windows-volume-row label {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 950px) {
+  .windows-editor-main {
+    height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .windows-library-list,
+  .windows-sequence-table {
+    min-height: 360px;
+  }
+
+  .windows-manager-body {
+    grid-template-columns: 1fr;
+  }
+
+  .windows-interlude-column {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .windows-menubar {
+    height: auto;
+    flex-wrap: wrap;
+  }
+
+  .windows-title-row {
+    align-items: flex-start;
+    gap: 10px;
+    flex-direction: column;
+  }
+
+  .windows-import-actions {
+    flex-wrap: wrap;
+  }
+
+  .windows-preview {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .windows-preview input,
+  .windows-preview > span {
+    grid-column: 1 / -1;
+  }
+
+  .windows-manager-top {
+    grid-template-columns: 1fr;
+  }
+
+  .windows-transport {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .windows-volume-row {
+    grid-template-columns: 1fr;
+  }
+}

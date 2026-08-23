@@ -1,14 +1,25 @@
 import type { TrackAction } from "./types";
 
+export type RepeatBeatRow = {
+  start_ms: number;
+  half_ms: number;
+  full_ms: number;
+};
+
 export type RepeatConfig = {
   action: TrackAction;
   repeatStartMs: number;
   repeatEndMs?: number | null;
   repeatMode?: string | null;
+  beatMap?: RepeatBeatRow[];
   onNaturalEnd?: () => void;
 };
 
 export class AudioEngine {
+  private interludeContext: AudioContext | null = null;
+  private interludeSource: MediaElementAudioSourceNode | null = null;
+  private interludeGain: GainNode | null = null;
+
   private main = new Audio();
   private repeatPlayer = new Audio();
   private interlude = new Audio();
@@ -36,6 +47,7 @@ export class AudioEngine {
   // Exact Windows v0.104 values.
   readonly repeatCrossfadeMs = 220;
   readonly drumRollRepeatCrossfadeMs = 45;
+  readonly repeatBridgeReleaseMs = 220;
   readonly duckedMusicLevel = 0.30;
   readonly interludeFadeDurationMs = 5000;
   readonly fadeEndDurationMs = 5000;
@@ -83,6 +95,23 @@ export class AudioEngine {
     return Math.max(0, Math.round(this.main.currentTime * 1000));
   }
 
+  getMainDurationMs(): number {
+    return Number.isFinite(this.main.duration)
+      ? Math.max(0, Math.round(this.main.duration * 1000))
+      : 0;
+  }
+
+  seekMain(positionMs: number) {
+    if (!Number.isFinite(this.main.duration) || this.main.duration <= 0) return;
+    const seconds = Math.max(
+      0,
+      Math.min(this.main.duration, positionMs / 1000)
+    );
+    try {
+      this.main.currentTime = seconds;
+    } catch {}
+  }
+
   isMainPlaying(): boolean {
     return !this.main.paused && !this.main.ended;
   }
@@ -103,12 +132,22 @@ export class AudioEngine {
     this.main.loop = false;
     this.main.volume = this.musicVolume;
 
+    // Preload the repeat bridge immediately. On iPhone/iPad Safari, assigning
+    // a source and seeking only at the loop boundary can cause currentTime to
+    // be ignored until metadata loads, making the repeat restart from 0.
+    this.repeatPlayer.pause();
+    this.repeatPlayer.src = url;
+    this.repeatPlayer.preload = "auto";
+    this.repeatPlayer.load();
+    this.repeatPlayer.volume = 0;
+
     this.bindMainEnded();
     await this.main.play();
     this.startRepeatMonitor();
   }
 
   stopMain() {
+    this.duckGeneration += 1;
     cancelAnimationFrame(this.monitorFrame);
     this.monitorFrame = 0;
 
@@ -125,6 +164,7 @@ export class AudioEngine {
   }
 
   hardStopMain() {
+    this.duckGeneration += 1;
     cancelAnimationFrame(this.monitorFrame);
     this.monitorFrame = 0;
     this.repeatCrossfadeActive = false;
@@ -141,12 +181,87 @@ export class AudioEngine {
   }
 
   async fadeMainToStop(durationMs = this.fadeEndDurationMs) {
-    if (!this.isMainPlaying()) return;
+    const mainWasPlaying = this.isMainPlaying();
+    const repeatWasPlaying =
+      !this.repeatPlayer.paused && !this.repeatPlayer.ended;
 
-    await this.fade(this.main, this.main.volume, 0, durationMs);
+    if (!mainWasPlaying && !repeatWasPlaying) return;
+
+    // Freeze all mechanisms that can change playback/volume while fading.
+    cancelAnimationFrame(this.monitorFrame);
+    this.monitorFrame = 0;
+    this.repeatSuppressed = true;
+
+    // Invalidate any pending drum-cue duck restore timer. Without this, an
+    // older cue timeout can restore the march to full Music Volume halfway
+    // through the 5-second fade.
+    this.duckGeneration += 1;
+
+    const mainStart = Math.max(0, Math.min(1, this.main.volume));
+    const repeatStart = Math.max(0, Math.min(1, this.repeatPlayer.volume));
+
+    // If a Repeat crossfade is active, BOTH audible media elements must fade.
+    // Previously only the primary element faded, so the bridge player could
+    // remain audible and make the Fade button appear not to work.
+    const fades: Promise<void>[] = [];
+
+    if (mainWasPlaying) {
+      fades.push(this.fade(this.main, mainStart, 0, durationMs));
+    }
+
+    if (repeatWasPlaying) {
+      fades.push(this.fade(this.repeatPlayer, repeatStart, 0, durationMs));
+    }
+
+    await Promise.all(fades);
+
     this.main.volume = 0;
+    this.repeatPlayer.volume = 0;
+
     this.hardStopMain();
+
+    // Prepare the next normal track at the operator's Music Volume.
     this.main.volume = this.musicVolume;
+    this.repeatPlayer.volume = 0;
+    this.repeatSuppressed = false;
+  }
+
+  private repeatGridLeadMs(config: RepeatConfig): number {
+    if (config.repeatStartMs <= 0) {
+      return this.drumRollRepeatCrossfadeMs;
+    }
+
+    const rows = config.beatMap ?? [];
+    let active: RepeatBeatRow | null = null;
+
+    for (const row of rows) {
+      if (row.start_ms <= config.repeatStartMs) {
+        active = row;
+      } else {
+        break;
+      }
+    }
+
+    if (!active) {
+      active =
+        rows.find(
+          (row) =>
+            row.start_ms > 0 &&
+            row.full_ms >= 300 &&
+            row.full_ms <= 2000
+        ) ?? null;
+    }
+
+    if (!active) return this.repeatCrossfadeMs;
+
+    const half =
+      active.half_ms > 0
+        ? active.half_ms
+        : Math.round(active.full_ms / 2);
+
+    // Legacy fast-march maps are normally ~240–275 ms per half beat.
+    // Clamp unusual files so the transition remains operationally safe.
+    return Math.max(120, Math.min(650, half));
   }
 
   private startRepeatMonitor() {
@@ -168,10 +283,7 @@ export class AudioEngine {
         const durationMs = this.main.duration * 1000;
         const loopEnd = config.repeatEndMs ?? durationMs;
 
-        const crossfadeLead =
-          config.repeatStartMs === 0
-            ? this.drumRollRepeatCrossfadeMs
-            : this.repeatCrossfadeMs;
+        const crossfadeLead = this.repeatGridLeadMs(config);
 
         if (this.getMainPositionMs() >= loopEnd - crossfadeLead) {
           void this.startRepeatCrossfade(
@@ -200,8 +312,34 @@ export class AudioEngine {
     const targetVolume = this.musicVolume;
 
     incoming.pause();
-    incoming.src = this.mainUrl;
-    incoming.currentTime = Math.max(0, repeatStartMs) / 1000;
+
+    if (incoming.src !== this.mainUrl) {
+      incoming.src = this.mainUrl;
+      incoming.preload = "auto";
+      incoming.load();
+    }
+
+    // Legacy .lib beat-grid pre-roll:
+    // start the incoming player one crossfade window BEFORE the repeat marker.
+    // When the outgoing track reaches its loop boundary, the incoming player
+    // arrives at repeatStartMs on the same musical beat.
+    const incomingStartMs =
+      repeatStartMs > 0
+        ? Math.max(0, repeatStartMs - activeCrossfadeMs)
+        : 0;
+
+    if (incoming.readyState < 1) {
+      await new Promise<void>((resolve) => {
+        const done = () => resolve();
+        incoming.addEventListener("loadedmetadata", done, { once: true });
+        window.setTimeout(done, 800);
+      });
+    }
+
+    try {
+      incoming.currentTime = incomingStartMs / 1000;
+    } catch {}
+
     incoming.volume = 0;
 
     try {
@@ -242,18 +380,52 @@ export class AudioEngine {
     outgoing.pause();
     outgoing.src = this.mainUrl;
     outgoing.currentTime = bridgePositionMs / 1000;
-    outgoing.volume = targetVolume;
+
+    // Keep the already-audible bridge player carrying the music while the
+    // primary HTMLAudio element wakes back up. On iPhone/iPad Safari the
+    // primary element can take longer than the old 80 ms bridge window,
+    // producing a small audible pause.
+    outgoing.volume = 0;
 
     try {
       await outgoing.play();
-    } catch {}
-
-    window.setTimeout(() => {
-      incoming.pause();
-      incoming.removeAttribute("src");
-      incoming.volume = 0;
+    } catch {
+      incoming.volume = targetVolume;
       this.repeatCrossfadeActive = false;
-    }, 80);
+      return;
+    }
+
+    // Second-stage handoff: crossfade from the bridge player back to the
+    // primary player instead of cutting the bridge after a fixed 80 ms.
+    const bridgeReleaseMs = this.repeatBridgeReleaseMs;
+    const bridgeSteps = 11;
+    const bridgeIntervalMs = Math.max(
+      12,
+      Math.floor(bridgeReleaseMs / bridgeSteps)
+    );
+
+    await new Promise<void>((resolve) => {
+      let step = 0;
+
+      const timer = window.setInterval(() => {
+        step += 1;
+        const frac = Math.min(1, step / bridgeSteps);
+
+        outgoing.volume = targetVolume * frac;
+        incoming.volume = targetVolume * (1 - frac);
+
+        if (step >= bridgeSteps) {
+          window.clearInterval(timer);
+          resolve();
+        }
+      }, bridgeIntervalMs);
+    });
+
+    outgoing.volume = targetVolume;
+    incoming.pause();
+    incoming.removeAttribute("src");
+    incoming.volume = 0;
+    this.repeatCrossfadeActive = false;
   }
 
   private handleMainEnded() {
@@ -300,6 +472,114 @@ export class AudioEngine {
     return !this.preview.paused && !this.preview.ended;
   }
 
+  private async ensureInterludeAudioGraph(): Promise<void> {
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+
+    if (!AudioContextCtor) return;
+
+    if (!this.interludeContext) {
+      this.interludeContext = new AudioContextCtor();
+    }
+
+    if (!this.interludeSource) {
+      try {
+        this.interludeSource =
+          this.interludeContext.createMediaElementSource(this.interlude);
+        this.interludeGain = this.interludeContext.createGain();
+        this.interludeSource.connect(this.interludeGain);
+        this.interludeGain.connect(this.interludeContext.destination);
+      } catch {
+        // If Safari already associated the element with a MediaElementSource,
+        // keep the existing graph and continue.
+      }
+    }
+
+    if (this.interludeContext.state === "suspended") {
+      try {
+        await this.interludeContext.resume();
+      } catch {}
+    }
+  }
+
+  private setInterludeGain(volume: number) {
+    const clamped = Math.max(0, Math.min(1, volume));
+
+    if (this.interludeGain && this.interludeContext) {
+      try {
+        const now = this.interludeContext.currentTime;
+        this.interludeGain.gain.cancelScheduledValues(now);
+        this.interludeGain.gain.setValueAtTime(clamped, now);
+      } catch {}
+    } else {
+      this.interlude.volume = clamped;
+    }
+  }
+
+  private async rampInterludeGain(
+    targetVolume: number,
+    durationMs: number,
+    onVolume?: (value: number) => void
+  ) {
+    const target = Math.max(0, Math.min(1, targetVolume));
+    await this.ensureInterludeAudioGraph();
+
+    // Use WebAudio automation on iOS/iPadOS Safari. HTMLAudioElement.volume
+    // updates are not reliably audible there during rapid scripted fades.
+    if (this.interludeGain && this.interludeContext) {
+      const context = this.interludeContext;
+      const gain = this.interludeGain.gain;
+      const now = context.currentTime;
+
+      let start = gain.value;
+      if (!Number.isFinite(start)) {
+        start = this.interlude.volume;
+      }
+
+      try {
+        gain.cancelScheduledValues(now);
+        gain.setValueAtTime(start, now);
+        gain.linearRampToValueAtTime(target, now + durationMs / 1000);
+      } catch {}
+
+      const steps = 50;
+      const intervalMs = Math.max(20, Math.floor(durationMs / steps));
+      let step = 0;
+
+      await new Promise<void>((resolve) => {
+        const timer = window.setInterval(() => {
+          step += 1;
+          const fraction = Math.min(1, step / steps);
+          const value = start + ((target - start) * fraction);
+          onVolume?.(Math.max(0, Math.min(1, value)));
+
+          if (fraction >= 1) {
+            window.clearInterval(timer);
+            resolve();
+          }
+        }, intervalMs);
+      });
+
+      try {
+        gain.cancelScheduledValues(context.currentTime);
+        gain.setValueAtTime(target, context.currentTime);
+      } catch {}
+
+      return;
+    }
+
+    // Fallback for browsers without WebAudio MediaElement routing.
+    await this.fade(
+      this.interlude,
+      this.interlude.volume,
+      target,
+      durationMs,
+      onVolume
+    );
+  }
+
   async playInterlude(url: string, volume: number) {
     this.interlude.pause();
 
@@ -310,15 +590,18 @@ export class AudioEngine {
 
     try { this.interlude.currentTime = 0; } catch {}
     this.interlude.loop = true;
-    this.interlude.volume = Math.max(0, Math.min(1, volume));
 
-    // Called directly from the Interlude Play button so this remains inside
-    // the iOS/iPadOS user gesture required by Safari media playback.
+    await this.ensureInterludeAudioGraph();
+    this.interlude.volume = 1.0;
+    this.setInterludeGain(volume);
+
+    // Called directly from the main Play button while an Interlude is selected.
+    // Keeping play() inside the user gesture is required by iOS/iPadOS Safari.
     await this.interlude.play();
   }
 
   setInterludeVolume(volume: number) {
-    this.interlude.volume = Math.max(0, Math.min(1, volume));
+    this.setInterludeGain(volume);
   }
 
   isInterludePlaying(): boolean {
@@ -333,14 +616,8 @@ export class AudioEngine {
     if (!this.isInterludePlaying()) return;
 
     const target = Math.max(0, Math.min(1, targetVolume));
-    await this.fade(
-      this.interlude,
-      this.interlude.volume,
-      target,
-      durationMs,
-      onVolume
-    );
-    this.interlude.volume = target;
+    await this.rampInterludeGain(target, durationMs, onVolume);
+    this.setInterludeGain(target);
     onVolume?.(target);
   }
 
@@ -352,19 +629,13 @@ export class AudioEngine {
     const target = Math.max(0, Math.min(1, targetVolume));
 
     if (!this.isInterludePlaying()) {
-      this.interlude.volume = target;
+      this.setInterludeGain(target);
       onVolume?.(target);
       return;
     }
 
-    await this.fade(
-      this.interlude,
-      this.interlude.volume,
-      target,
-      durationMs,
-      onVolume
-    );
-    this.interlude.volume = target;
+    await this.rampInterludeGain(target, durationMs, onVolume);
+    this.setInterludeGain(target);
     onVolume?.(target);
   }
 
@@ -374,16 +645,11 @@ export class AudioEngine {
   ) {
     if (!this.isInterludePlaying()) return;
 
-    await this.fade(
-      this.interlude,
-      this.interlude.volume,
-      0,
-      durationMs,
-      onVolume
-    );
+    await this.rampInterludeGain(0, durationMs, onVolume);
+    this.setInterludeGain(0);
 
     this.interlude.pause();
-    this.interlude.currentTime = 0;
+    try { this.interlude.currentTime = 0; } catch {}
   }
 
   stopInterludeImmediately() {
