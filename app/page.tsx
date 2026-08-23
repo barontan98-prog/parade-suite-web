@@ -613,7 +613,7 @@ export default function Home() {
     : null;
 
   // Keep Now Playing clean: show only the sequence action itself.
-  const currentActionLabel = selectedTrack ? selectedTrack.action : "";
+  const currentActionLabel = selected ? selected.action : "";
   const currentActionClass =
     currentActionLabel === "Repeat"
       ? "action-repeat"
