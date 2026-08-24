@@ -568,11 +568,10 @@ export class AudioEngine {
         }, intervalMs);
       });
 
-      try {
-        gain.cancelScheduledValues(context.currentTime);
-        gain.setValueAtTime(target, context.currentTime);
-      } catch {}
-
+      // Do not cancel and re-apply the gain at the end of the ramp.
+      // The AudioParam is already exactly at `target` after the scheduled
+      // linear ramp. Re-setting it here can create a short click/glitch on
+      // Safari/iPadOS when the fade completes.
       return;
     }
 
@@ -639,7 +638,6 @@ export class AudioEngine {
 
     const target = Math.max(0, Math.min(1, targetVolume));
     await this.rampInterludeGain(target, durationMs, onVolume);
-    this.setInterludeGain(target);
     onVolume?.(target);
   }
 
@@ -657,7 +655,6 @@ export class AudioEngine {
     }
 
     await this.rampInterludeGain(target, durationMs, onVolume);
-    this.setInterludeGain(target);
     onVolume?.(target);
   }
 
