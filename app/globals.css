@@ -1330,3 +1330,408 @@ button.action-active,
   background: #1f2937;
   color: #f9fafb;
 }
+
+
+/* ============================================================
+   Phone / Tablet Responsive Layout
+   Parade Suite Version 1
+   ============================================================ */
+
+/* Tablet: 701px–1024px
+   Keep controls comfortably sized, use stacked major panels where needed,
+   and avoid forcing desktop widths into the viewport. */
+@media (min-width: 701px) and (max-width: 1024px) {
+  .windows-editor,
+  .windows-manager {
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .windows-editor-main {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .windows-library-list {
+    min-height: 300px;
+    max-height: 360px;
+  }
+
+  .windows-sequence-table {
+    min-height: 280px;
+  }
+
+  .windows-manager-body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow: visible;
+  }
+
+  .windows-manager-left {
+    grid-template-rows: auto auto;
+  }
+
+  .windows-manager-top {
+    grid-template-columns: minmax(0, 1fr) 160px 160px;
+  }
+
+  .windows-interlude-column {
+    width: 100%;
+  }
+
+  .windows-interlude-column fieldset {
+    min-height: auto;
+  }
+
+  .windows-current-title {
+    font-size: clamp(30px, 5vw, 46px);
+  }
+}
+
+
+/* Phone: 700px and below
+   Switch from desktop/table layouts to a true single-column mobile UI. */
+@media (max-width: 700px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .windows-parity,
+  .app-shell {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Editor ---------- */
+
+  .windows-editor {
+    height: auto;
+    min-height: calc(100dvh - 70px);
+    overflow: visible;
+    padding: 8px 10px 20px;
+  }
+
+  .windows-title-row {
+    min-height: auto;
+    gap: 10px;
+  }
+
+  .windows-import-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .windows-import-actions button,
+  .windows-import-actions .win-btn {
+    width: 100%;
+    min-height: 54px;
+  }
+
+  .windows-editor-main {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    gap: 24px;
+  }
+
+  .windows-library-pane,
+  .windows-sequence-pane {
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  /* Music Library remains a fixed scroll box on phone. */
+  .windows-library-list {
+    height: 300px;
+    min-height: 300px;
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-library-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Parade Sequence becomes mobile cards instead of a squeezed 4-column row. */
+  .windows-sequence-table {
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+    background: transparent;
+    border: 0;
+  }
+
+  .windows-sequence-header {
+    display: none;
+  }
+
+  .windows-sequence-body {
+    display: grid;
+    gap: 8px;
+    max-height: 390px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-sequence-row {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-areas:
+      "number track"
+      "action action"
+      "category category";
+    gap: 8px 10px;
+    min-height: 0;
+    padding: 12px;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    background: #1f2937;
+  }
+
+  .windows-sequence-row.selected {
+    background: rgba(37, 99, 235, .24);
+    border-color: #3b82f6;
+  }
+
+  .windows-sequence-row > span:first-child {
+    grid-area: number;
+    align-self: center;
+    padding: 0;
+    text-align: center;
+  }
+
+  .windows-sequence-row > strong {
+    grid-area: track;
+    display: block;
+    min-width: 0;
+    padding: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.3;
+  }
+
+  .windows-sequence-row > select {
+    grid-area: action;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 36px 8px 10px;
+  }
+
+  .windows-sequence-row > span:last-child {
+    grid-area: category;
+    padding: 2px 0 0;
+    color: #cbd5e1;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .windows-sequence-controls {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    min-height: 52px;
+  }
+
+  .windows-sequence-controls > span:not(.spacer) {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .windows-preview {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .windows-preview button {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .windows-preview input[type="range"] {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .windows-preview > span {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+
+  /* ---------- Manager ---------- */
+
+  .windows-manager {
+    display: block;
+    height: auto;
+    min-height: calc(100dvh - 70px);
+    overflow: visible;
+    padding: 8px 10px 24px;
+  }
+
+  .windows-manager-title {
+    margin-bottom: 14px;
+  }
+
+  /* Flatten the desktop wrappers so each panel can be ordered independently. */
+  .windows-manager-body {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+    overflow: visible;
+    gap: 10px;
+  }
+
+  .windows-manager-left,
+  .windows-manager-top {
+    display: contents;
+  }
+
+  .windows-playlist-box {
+    order: 1;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .windows-playlist {
+    height: 210px;
+    max-height: 210px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-now-playing {
+    order: 2;
+    width: 100%;
+    min-height: 165px;
+    padding: 12px 10px !important;
+  }
+
+  .windows-actions-box {
+    order: 3;
+    width: 100%;
+  }
+
+  .windows-cues-box {
+    order: 4;
+    width: 100%;
+  }
+
+  .windows-interlude-column {
+    order: 5;
+    width: 100%;
+    padding: 0;
+    display: block;
+  }
+
+  .windows-manager fieldset {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .windows-actions-box,
+  .windows-cues-box {
+    display: grid;
+    gap: 8px;
+  }
+
+  .windows-actions-box button,
+  .windows-cues-box button {
+    width: 100%;
+    min-height: 50px;
+  }
+
+  .windows-current-title {
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .windows-current-action {
+    min-height: 20px;
+    font-size: 18px;
+  }
+
+  .windows-next-track {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .windows-interlude-column fieldset {
+    min-height: 0;
+  }
+
+  .windows-interlude-column .interlude-name {
+    min-height: 48px;
+    padding: 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .default-box {
+    margin: 10px 0 12px;
+  }
+
+  .windows-manager-progress {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .windows-transport {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .windows-transport button {
+    min-height: 56px;
+    width: 100%;
+  }
+
+  .windows-volume-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .windows-volume-row label {
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .windows-volume-row input {
+    min-width: 0;
+  }
+
+  .windows-sync {
+    margin-top: 4px;
+  }
+
+  /* Mobile About dialog */
+  .about-modal {
+    width: calc(100vw - 28px);
+    padding: 28px 20px 24px;
+  }
+}
