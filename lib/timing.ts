@@ -263,71 +263,140 @@ export function repeatStartMsForTrack(track: Track): number {
   return 0;
 }
 
+
+const TIMING_INDEX_CACHE_MS = 10 * 60 * 1000;
+
+let remoteTimingIndexCache:
+  | { value: Record<string, string>; loadedAt: number }
+  | null = null;
+let remoteTimingIndexPromise: Promise<Record<string, string> | null> | null = null;
+
+let bundledTimingIndexCache:
+  | { value: Record<string, string>; loadedAt: number }
+  | null = null;
+let bundledTimingIndexPromise: Promise<Record<string, string> | null> | null = null;
+
+async function getRemoteTimingIndex(): Promise<Record<string, string> | null> {
+  const now = Date.now();
+
+  if (
+    remoteTimingIndexCache &&
+    now - remoteTimingIndexCache.loadedAt < TIMING_INDEX_CACHE_MS
+  ) {
+    return remoteTimingIndexCache.value;
+  }
+
+  if (remoteTimingIndexPromise) return remoteTimingIndexPromise;
+
+  remoteTimingIndexPromise = (async () => {
+    try {
+      const response = await fetch("/api/lib-maps/index", {
+        cache: "no-store",
+      });
+      if (!response.ok) return null;
+
+      const value = (await response.json()) as Record<string, string>;
+      remoteTimingIndexCache = { value, loadedAt: Date.now() };
+      return value;
+    } catch {
+      return null;
+    } finally {
+      remoteTimingIndexPromise = null;
+    }
+  })();
+
+  return remoteTimingIndexPromise;
+}
+
+async function getBundledTimingIndex(): Promise<Record<string, string> | null> {
+  const now = Date.now();
+
+  if (
+    bundledTimingIndexCache &&
+    now - bundledTimingIndexCache.loadedAt < TIMING_INDEX_CACHE_MS
+  ) {
+    return bundledTimingIndexCache.value;
+  }
+
+  if (bundledTimingIndexPromise) return bundledTimingIndexPromise;
+
+  bundledTimingIndexPromise = (async () => {
+    try {
+      const response = await fetch("/generated_timing_maps/index.json?v=1", {
+        cache: "force-cache",
+      });
+      if (!response.ok) return null;
+
+      const value = (await response.json()) as Record<string, string>;
+      bundledTimingIndexCache = { value, loadedAt: Date.now() };
+      return value;
+    } catch {
+      return null;
+    } finally {
+      bundledTimingIndexPromise = null;
+    }
+  })();
+
+  return bundledTimingIndexPromise;
+}
+
+function chooseTimingMapName(
+  index: Record<string, string>,
+  audioName: string
+): string | undefined {
+  const key = normalizeTrackName(audioName);
+
+  let mappedName = index[key];
+  if (mappedName) return mappedName;
+
+  const candidates: Array<[number, string]> = [];
+
+  for (const [knownKey, filename] of Object.entries(index)) {
+    if (!knownKey) continue;
+
+    if (key.includes(knownKey) || knownKey.includes(key)) {
+      const score =
+        Math.min(key.length, knownKey.length) /
+        Math.max(key.length, knownKey.length);
+
+      if (score >= 0.72) candidates.push([score, filename]);
+    }
+  }
+
+  if (!candidates.length) return undefined;
+
+  candidates.sort((a, b) => {
+    if (b[0] !== a[0]) return b[0] - a[0];
+    return b[1].localeCompare(a[1]);
+  });
+
+  return candidates[0][1];
+}
+
 export async function loadWindowsTimingMap(
   audioName: string
 ): Promise<{ parsed: ParsedLIB; libName: string } | null> {
-  // 1. A LIB explicitly imported in this browser remains the highest-priority
-  //    temporary override.
+  // A manually imported LIB remains the highest-priority local override.
   const imported = localImportedLIBForAudio(audioName);
   if (imported) return imported;
 
-  const key = normalizeTrackName(audioName);
-
-  // Shared matching helper used for both the private GitHub repository and the
-  // bundled compatibility maps.
-  function chooseMappedName(index: Record<string, string>): string | undefined {
-    let mappedName = index[key];
-
-    if (!mappedName) {
-      const candidates: Array<[number, string]> = [];
-
-      for (const [knownKey, filename] of Object.entries(index)) {
-        if (!knownKey) continue;
-
-        if (key.includes(knownKey) || knownKey.includes(key)) {
-          const score =
-            Math.min(key.length, knownKey.length) /
-            Math.max(key.length, knownKey.length);
-
-          if (score >= 0.72) candidates.push([score, filename]);
-        }
-      }
-
-      if (candidates.length) {
-        candidates.sort((a, b) => {
-          if (b[0] !== a[0]) return b[0] - a[0];
-          return b[1].localeCompare(a[1]);
-        });
-        mappedName = candidates[0][1];
-      }
-    }
-
-    return mappedName;
-  }
-
-  // 2. Private GitHub LIB repository.
-  //
-  // The browser never receives the GitHub token. These endpoints are server
-  // routes in this Next.js app and require a valid Parade Suite session.
+  // Private GitHub repository first. The index is cached in browser memory for
+  // 10 minutes so loading 50–100 tracks does not request the same index again
+  // for every track.
   try {
-    const remoteIndexResponse = await fetch("/api/lib-maps/index", {
-      cache: "no-store",
-    });
-
-    if (remoteIndexResponse.ok) {
-      const remoteIndex =
-        (await remoteIndexResponse.json()) as Record<string, string>;
-      const remotePath = chooseMappedName(remoteIndex);
+    const remoteIndex = await getRemoteTimingIndex();
+    if (remoteIndex) {
+      const remotePath = chooseTimingMapName(remoteIndex, audioName);
 
       if (remotePath) {
-        const remoteLIBResponse = await fetch(
+        const response = await fetch(
           `/api/lib-maps/file?path=${encodeURIComponent(remotePath)}`,
           { cache: "no-store" }
         );
 
-        if (remoteLIBResponse.ok) {
+        if (response.ok) {
           return {
-            parsed: parseLegacyLIB(await remoteLIBResponse.text()),
+            parsed: parseLegacyLIB(await response.text()),
             libName: remotePath.split("/").pop() || remotePath,
           };
         }
@@ -340,24 +409,18 @@ export async function loadWindowsTimingMap(
     );
   }
 
-  // 3. Bundled legacy_timing_maps compatibility fallback.
-  //
-  // This means the existing deployment keeps working while you migrate maps to
-  // the new private repository. New/updated maps in GitHub take priority.
+  // Bundled compatibility fallback. Its index is also cached, and the static
+  // generated files can use the browser/CDN cache.
   try {
-    const indexResponse = await fetch("/generated_timing_maps/index.json?v=0.162", {
-      cache: "no-store",
-    });
-    if (!indexResponse.ok) return null;
+    const bundledIndex = await getBundledTimingIndex();
+    if (!bundledIndex) return null;
 
-    const index = (await indexResponse.json()) as Record<string, string>;
-    const mappedName = chooseMappedName(index);
-
+    const mappedName = chooseTimingMapName(bundledIndex, audioName);
     if (!mappedName) return null;
 
     const response = await fetch(
-      `/generated_timing_maps/${encodeURIComponent(mappedName)}?v=0.162`,
-      { cache: "no-store" }
+      `/generated_timing_maps/${encodeURIComponent(mappedName)}?v=1`,
+      { cache: "force-cache" }
     );
     if (!response.ok) return null;
 
