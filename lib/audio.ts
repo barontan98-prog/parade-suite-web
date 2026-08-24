@@ -19,6 +19,7 @@ export class AudioEngine {
   private interludeContext: AudioContext | null = null;
   private interludeSource: MediaElementAudioSourceNode | null = null;
   private interludeGain: GainNode | null = null;
+  private interludeResetGeneration = 0;
 
   private main = new Audio();
   private repeatPlayer = new Audio();
@@ -586,6 +587,7 @@ export class AudioEngine {
   }
 
   async playInterlude(url: string, volume: number) {
+    this.interludeResetGeneration += 1;
     this.interlude.pause();
 
     if (this.interlude.src !== url) {
@@ -660,44 +662,59 @@ export class AudioEngine {
 
   async fadeInterludeToStop(
     durationMs = this.interludeFadeDurationMs,
-    onVolume?: (value: number) => void
+    onVolume?: (value: number) => void,
+    restoreVolume = 0.60
   ) {
     if (!this.isInterludePlaying()) return;
 
-    // Fade fully to silence first.
+    // Cancel any older delayed reset/restore sequence.
+    const generation = ++this.interludeResetGeneration;
+
+    // 1) Fade fully to 0% within 5 seconds.
     await this.rampInterludeGain(0, durationMs, onVolume);
+    if (generation !== this.interludeResetGeneration) return;
     onVolume?.(0);
 
-    // Stop the media element only after it is completely silent.
+    // 2) Once truly silent, stop the element and reset it to the beginning.
+    // The GainNode stays at 0%, so any browser seek transient remains inaudible.
     this.interlude.pause();
-
-    // Safari/iPadOS can emit a short unwanted sound if currentTime is reset
-    // immediately after pausing a MediaElementSource. Leave it untouched for
-    // 3 seconds, then reset it safely for the next playback.
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, 3000);
-    });
-
     try {
       this.interlude.currentTime = 0;
     } catch {}
 
-    // Restore the interlude channel to its configured/default volume so the
-    // next Play starts normally rather than remaining at 0%.
-    this.setInterludeGain(this.interludeDefaultVolume);
-    onVolume?.(this.interludeDefaultVolume);
+    // The track is already stopped now. Run the remaining reset sequence in
+    // the background so Parade Suite can select the next playlist track now.
+    void (async () => {
+      // 3) Wait 5 seconds at 0% while paused at 00:00.
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 5000);
+      });
+      if (generation !== this.interludeResetGeneration) return;
+
+      // 4) Still paused, fade the Interlude channel back to Default % over
+      // another 5 seconds.
+      const target = Math.max(0, Math.min(1, restoreVolume));
+      await this.rampInterludeGain(target, 5000, onVolume);
+      if (generation !== this.interludeResetGeneration) return;
+      onVolume?.(target);
+    })();
   }
 
-  stopInterludeImmediately() {
+  stopInterludeImmediately(restoreVolume = 0.60) {
+    const generation = ++this.interludeResetGeneration;
+
+    this.setInterludeGain(0);
     this.interlude.pause();
+    try {
+      this.interlude.currentTime = 0;
+    } catch {}
 
     window.setTimeout(() => {
-      try {
-        this.interlude.currentTime = 0;
-      } catch {}
+      if (generation !== this.interludeResetGeneration) return;
 
-      this.setInterludeGain(this.interludeDefaultVolume);
-    }, 3000);
+      const target = Math.max(0, Math.min(1, restoreVolume));
+      void this.rampInterludeGain(target, 5000);
+    }, 5000);
   }
 
   async unlockCueAudio(): Promise<void> {
