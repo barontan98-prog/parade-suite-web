@@ -685,17 +685,16 @@ export class AudioEngine {
     // The track is already stopped now. Run the remaining reset sequence in
     // the background so Parade Suite can select the next playlist track now.
     void (async () => {
-      // 3) Wait 5 seconds at 0% while paused at 00:00.
+      // 3) Wait 2 seconds at 0% while paused at 00:00.
       await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, 5000);
+        window.setTimeout(resolve, 2000);
       });
       if (generation !== this.interludeResetGeneration) return;
 
-      // 4) Still paused, fade the Interlude channel back to Default % over
-      // another 5 seconds.
+      // 4) Still paused at the beginning, restore the Interlude channel
+      // immediately to the operator's editable Default %.
       const target = Math.max(0, Math.min(1, restoreVolume));
-      await this.rampInterludeGain(target, 5000, onVolume);
-      if (generation !== this.interludeResetGeneration) return;
+      this.setInterludeGain(target);
       onVolume?.(target);
     })();
   }
@@ -713,8 +712,8 @@ export class AudioEngine {
       if (generation !== this.interludeResetGeneration) return;
 
       const target = Math.max(0, Math.min(1, restoreVolume));
-      void this.rampInterludeGain(target, 5000);
-    }, 5000);
+      this.setInterludeGain(target);
+    }, 2000);
   }
 
   async unlockCueAudio(): Promise<void> {
