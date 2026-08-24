@@ -870,7 +870,10 @@ export class AudioEngine {
     // Schedule only the march ducking UI/audio-volume change around the cue.
     // The cue itself no longer depends on a delayed setTimeout callback.
     window.setTimeout(() => {
-      this.duckMusicForCue(duckDurationMs, duckLevel);
+      // Manual bass-drum cues duck to a percentage of the CURRENT music
+      // level, so the effect is always audible even when the music slider
+      // is below 100%.
+      this.duckMusicForCue(duckDurationMs, duckLevel, true);
     }, Math.max(0, delayMs - 10));
 
     return true;
@@ -881,8 +884,9 @@ export class AudioEngine {
     duckDurationMs = 950,
     duckLevel = this.duckedMusicLevel
   ) {
-    // Keep the Windows cue itself untouched.
-    this.duckMusicForCue(duckDurationMs, duckLevel);
+    // Keep the cue WAV itself untouched. Manual bass-drum cues duck
+    // relative to the operator's current music volume.
+    this.duckMusicForCue(duckDurationMs, duckLevel, true);
 
     // iOS Safari path: use the persistent element that was unlocked during
     // the user's Play/Drum Cue tap. This avoids silent failure in delayed
@@ -935,7 +939,7 @@ export class AudioEngine {
 
       const fallbackMs = isKnights ? 4200 : 4500;
       const endingDuckLevel = isKnights ? 0.15 : 0.30;
-      this.duckMusicForCue(fallbackMs + 250, endingDuckLevel);
+      this.duckMusicForCue(fallbackMs + 250, endingDuckLevel, true);
 
       return new Promise<void>(async (resolve) => {
         const finish = () => {
@@ -952,7 +956,7 @@ export class AudioEngine {
     // Knights of St John ending needs more separation from the march.
     // Standard ending stays at 30%; Knights ducks the march to 15%.
     const endingDuckLevel = isKnights ? 0.15 : 0.30;
-    this.duckMusicForCue(durationMs + 250, endingDuckLevel);
+    this.duckMusicForCue(durationMs + 250, endingDuckLevel, true);
 
     const source = context.createBufferSource();
     const gain = context.createGain();
@@ -982,15 +986,27 @@ export class AudioEngine {
   }
 
 
-  private duckMusicForCue(durationMs = 900, level = this.duckedMusicLevel) {
+  private duckMusicForCue(
+    durationMs = 900,
+    level = this.duckedMusicLevel,
+    relativeToCurrent = false
+  ) {
     if (!this.isMainPlaying()) return;
 
     this.duckGeneration += 1;
     const generation = this.duckGeneration;
 
     const normalLevel = this.musicVolume;
-    const duckLevel = Math.max(0, Math.min(normalLevel, level));
 
+    // Manual drum cues use relative ducking:
+    // e.g. music at 80% with a 30% duck target becomes 24%.
+    // This prevents the old problem where music at 30% or lower barely
+    // ducked at all because 0.30 was treated as an absolute level.
+    const requestedLevel = relativeToCurrent
+      ? normalLevel * level
+      : level;
+
+    const duckLevel = Math.max(0, Math.min(normalLevel, requestedLevel));
     this.main.volume = duckLevel;
 
     window.setTimeout(() => {
