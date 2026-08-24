@@ -1263,3 +1263,70 @@ button.action-active,
     min-height: 72px;
   }
 }
+
+
+/* Version 1 — clean file menu + About Parade Suite */
+.windows-menu-separator {
+  color: #64748b;
+  padding: 0 2px;
+  user-select: none;
+}
+
+.about-modal {
+  position: relative;
+  width: min(520px, calc(100vw - 36px));
+  padding: 34px 36px 30px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #111827;
+  color: #f9fafb;
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+  text-align: center;
+}
+
+.about-modal h2 {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.about-modal p {
+  margin: 14px 0 0;
+  line-height: 1.55;
+}
+
+.about-subtitle {
+  color: #cbd5e1;
+  font-size: 15px;
+}
+
+.about-version {
+  font-weight: 700;
+}
+
+.about-description {
+  color: #cbd5e1;
+  max-width: 430px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.windows-parity .about-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.windows-parity .about-close:hover {
+  background: #1f2937;
+  color: #f9fafb;
+}

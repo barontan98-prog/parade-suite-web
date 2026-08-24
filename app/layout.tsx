@@ -2,8 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Parade Suite v0.104",
-  description: "Parade music sequence manager",
+  title: "Parade Suite",
+  description: "Parade and Ceremonial Music Management System",
   manifest: "/manifest.webmanifest",
 };
 
