@@ -2690,3 +2690,33 @@ button.action-active,
   border-color: #2563EB !important;
   color: #FFFFFF !important;
 }
+
+
+/* Parade Suite clicked/active operational buttons */
+.action-active,
+button.action-active,
+.big-btn.action-active,
+.transport button.action-active,
+.transport .play.action-active,
+.interlude-restore-btn.action-active,
+.windows-manager button.action-active {
+  background: #1E3A8A !important;
+  border-color: #1D4ED8 !important;
+  color: #FFFFFF !important;
+}
+
+/* Spread Play and Stop across the available width */
+.windows-mobile-main-controls,
+.windows-main-controls,
+.transport {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.windows-mobile-main-controls button,
+.windows-main-controls button,
+.transport button {
+  width: 100% !important;
+}
