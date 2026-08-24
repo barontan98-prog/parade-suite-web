@@ -664,16 +664,25 @@ export class AudioEngine {
   ) {
     if (!this.isInterludePlaying()) return;
 
+    // Fade the WebAudio GainNode all the way to silence.
     await this.rampInterludeGain(0, durationMs, onVolume);
-    this.setInterludeGain(0);
+    onVolume?.(0);
 
+    // IMPORTANT for Safari/iPadOS:
+    // once the gain has reached zero, pause the media element but DO NOT
+    // immediately seek it back to 0. Seeking a MediaElementSource while it is
+    // attached to a live AudioContext can briefly render a frame from the
+    // beginning of the file, producing the short "weird sound" after the fade.
+    //
+    // playInterlude() already seeks to 0 before the next playback, so there is
+    // no need to reset currentTime here.
     this.interlude.pause();
-    try { this.interlude.currentTime = 0; } catch {}
   }
 
   stopInterludeImmediately() {
+    // Keep the same Safari-safe rule for an immediate stop. The next Play
+    // resets currentTime to 0 before starting.
     this.interlude.pause();
-    try { this.interlude.currentTime = 0; } catch {}
   }
 
   async unlockCueAudio(): Promise<void> {
