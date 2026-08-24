@@ -40,6 +40,13 @@ const CATEGORIES = [
   "Others",
 ];
 
+function normalizeLIBCategory(value?: string | null): string | undefined {
+  const raw = (value || "").trim();
+  if (!raw) return undefined;
+  if (raw.toLowerCase() === "interlude") return "Interlude Music";
+  return CATEGORIES.includes(raw) ? raw : undefined;
+}
+
 type AccessUser = {
   id: string;
   name: string;
@@ -403,6 +410,7 @@ export default function Home() {
         );
       }
 
+      const libCategory = normalizeLIBCategory(builtIn?.category);
       const desired = {
         has_lib: Boolean(windowsMap),
         has_timing_map: Boolean(builtIn?.beatMap?.length),
@@ -411,6 +419,7 @@ export default function Home() {
         repeat_end_ms: builtIn?.repeatEndMs ?? null,
         repeat_mode: builtIn?.repeatMode ?? null,
         lib_name: windowsMap?.libName ?? null,
+        ...(libCategory ? { category: libCategory } : {}),
       };
 
       const changed =
@@ -420,7 +429,8 @@ export default function Home() {
         (track.repeat_start_ms ?? null) !== desired.repeat_start_ms ||
         (track.repeat_end_ms ?? null) !== desired.repeat_end_ms ||
         (track.repeat_mode ?? null) !== desired.repeat_mode ||
-        (track.lib_name ?? null) !== desired.lib_name;
+        (track.lib_name ?? null) !== desired.lib_name ||
+        (desired.category !== undefined && track.category !== desired.category);
 
       if (changed) {
         try {
@@ -688,8 +698,8 @@ export default function Home() {
         const track = await createTrack({
           title: windowsMeta.record?.title || builtIn?.title || title,
           category:
+            normalizeLIBCategory(builtIn?.category) ||
             windowsMeta.category ||
-            builtIn?.category ||
             guessCategory(file.name),
           file_url: publicUrl,
           source_name: file.name,
@@ -834,12 +844,7 @@ export default function Home() {
         // well as its timing map.  Previously the browser import only persisted
         // timing fields, so changing a LIB category (for example to
         // "Interlude Music") did not update the Music Library UI.
-        const importedCategory = (() => {
-          const raw = (parsed.category || "").trim();
-          if (!raw) return undefined;
-          if (raw.toLowerCase() === "interlude") return "Interlude Music";
-          return CATEGORIES.includes(raw) ? raw : undefined;
-        })();
+        const importedCategory = normalizeLIBCategory(parsed.category);
 
         const patch = {
           has_lib: true,
