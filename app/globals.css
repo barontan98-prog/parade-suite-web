@@ -2211,3 +2211,224 @@ button.action-active,
     gap: 12px;
   }
 }
+
+
+/* ============================================================
+   Tablet / iPad Manager compact layout
+   Goal: show from top of page through Drum Cues without scrolling.
+   Order:
+   1. Main Controls
+   2. Actions
+   3. Drum Cues
+   4. Interlude Music
+   ============================================================ */
+@media (min-width: 701px) and (max-width: 1024px) {
+  .windows-manager {
+    display: block;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 6px 10px 18px;
+  }
+
+  .windows-manager-title {
+    margin: 2px 0 8px;
+  }
+
+  .windows-manager-title::after {
+    margin-top: 5px;
+  }
+
+  .windows-manager-body {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    width: 100%;
+    min-height: 0 !important;
+    overflow: visible !important;
+    gap: 7px;
+  }
+
+  .windows-manager-left,
+  .windows-manager-top {
+    display: contents !important;
+  }
+
+  /* Keep the Playlist compact but independently scrollable. */
+  .windows-playlist-box {
+    order: 1;
+    width: 100%;
+    min-height: 0 !important;
+  }
+
+  .windows-playlist {
+    height: 135px !important;
+    min-height: 135px !important;
+    max-height: 135px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-playlist button {
+    min-height: 36px;
+    padding: 5px 7px;
+  }
+
+  /* Smaller Now Playing panel so the operational controls fit in one screen. */
+  .windows-now-playing {
+    order: 2;
+    width: 100%;
+    min-height: 105px !important;
+    padding: 7px 10px !important;
+    gap: 3px !important;
+  }
+
+  .windows-current-title {
+    font-size: clamp(27px, 4vw, 38px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .windows-current-action {
+    min-height: 16px;
+    font-size: 15px !important;
+  }
+
+  .windows-next-track {
+    font-size: 14px !important;
+  }
+
+  .windows-now-playing .counter {
+    font-size: 12px;
+  }
+
+  /* The duplicate main-control block inside manager-body is used on tablet. */
+  .windows-mobile-main-controls {
+    display: grid !important;
+    order: 3;
+    width: 100%;
+    gap: 5px;
+    margin: 0;
+  }
+
+  /* Hide the normal desktop copy so controls appear only once. */
+  .windows-manager > .windows-manager-progress,
+  .windows-manager > .windows-transport,
+  .windows-manager > .windows-volume-row {
+    display: none !important;
+  }
+
+  .windows-mobile-main-controls .windows-manager-progress {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    margin: 0;
+    gap: 5px;
+  }
+
+  .windows-mobile-main-controls .windows-transport {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px;
+    margin: 0;
+  }
+
+  .windows-mobile-main-controls .windows-transport button {
+    min-height: 42px !important;
+    padding: 6px 5px;
+  }
+
+  .windows-mobile-main-controls .windows-volume-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px;
+    margin: 0;
+  }
+
+  .windows-mobile-main-controls .windows-volume-row label {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 7px;
+    font-size: 13px;
+  }
+
+  /* Actions and Drum Cues are full-width boxes stacked one above the other. */
+  .windows-actions-box {
+    order: 4;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px 8px !important;
+  }
+
+  .windows-cues-box {
+    order: 5;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px 8px !important;
+  }
+
+  .windows-actions-box legend,
+  .windows-cues-box legend {
+    grid-column: 1 / -1;
+  }
+
+  .windows-actions-box button,
+  .windows-cues-box button {
+    width: 100%;
+    min-height: 42px !important;
+    padding: 6px 5px !important;
+    font-size: 13px !important;
+  }
+
+  .windows-sync {
+    grid-column: 1 / -1;
+    margin-top: 0;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  /* Interlude remains after the Drum Cues and may continue below the fold. */
+  .windows-interlude-column {
+    order: 6;
+    width: 100% !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .windows-manager fieldset {
+    margin: 0;
+  }
+}
+
+/* iPad/tablet landscape has more width but less usable browser height.
+   Make the upper controls even tighter so Drum Cues stays on-screen. */
+@media (min-width: 701px) and (max-width: 1366px) and
+       (orientation: landscape) and (max-height: 900px) {
+  .windows-playlist {
+    height: 115px !important;
+    min-height: 115px !important;
+    max-height: 115px !important;
+  }
+
+  .windows-now-playing {
+    min-height: 92px !important;
+  }
+
+  .windows-current-title {
+    font-size: clamp(25px, 3.2vw, 34px) !important;
+  }
+
+  .windows-mobile-main-controls .windows-transport button,
+  .windows-actions-box button,
+  .windows-cues-box button {
+    min-height: 38px !important;
+  }
+
+  .windows-manager-body {
+    gap: 5px;
+  }
+
+  .windows-actions-box,
+  .windows-cues-box {
+    padding: 4px 7px !important;
+  }
+}

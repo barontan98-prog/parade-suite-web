@@ -484,6 +484,19 @@ export default function Home() {
     return refreshed;
   }
 
+  function isInterludeTrack(track: Track | null | undefined) {
+    if (!track) return false;
+
+    const title = track.title.toLowerCase();
+    const category = (track.category || "").toLowerCase();
+
+    return (
+      category.includes("interlude") ||
+      title.startsWith("interlude") ||
+      title.includes("interlude -")
+    );
+  }
+
   async function previewMusic(track: Track) {
     try {
       if (previewTrackId === track.id && audio.current?.isPreviewPlaying()) {
