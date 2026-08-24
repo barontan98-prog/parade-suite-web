@@ -1792,7 +1792,11 @@ export default function Home() {
                         >
                           <span>{String(index + 1).padStart(2, "0")}.</span>
                           <span>{displayMusicName(track)}</span>
-                          <span>[{item.action}]</span>
+                          <span
+                            className={`playlist-action-text action-${item.action.toLowerCase()}`}
+                          >
+                            [{item.action}]
+                          </span>
                         </button>
                       );
                     })}

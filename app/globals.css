@@ -2867,3 +2867,24 @@ button.action-active,
     -webkit-overflow-scrolling: touch;
   }
 }
+
+
+/* ============================================================
+   Parade Manager Playlist action text colours
+   Match the action colours used elsewhere in Parade Suite.
+   ============================================================ */
+.windows-playlist .playlist-action-text {
+  font-weight: 700;
+}
+
+.windows-playlist .playlist-action-text.action-repeat {
+  color: #22c55e !important;
+}
+
+.windows-playlist .playlist-action-text.action-end {
+  color: #ef4444 !important;
+}
+
+.windows-playlist .playlist-action-text.action-interlude {
+  color: #60a5fa !important;
+}
