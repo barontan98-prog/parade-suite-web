@@ -1631,6 +1631,500 @@ export default function Home() {
             autoFocus
             aria-label="4-digit passcode"
           />
+
+          <button
+            className="button primary access-button"
+            type="submit"
+            disabled={loginBusy || loginPin.length !== 4}
+          >
+            {loginBusy ? "Checking…" : "Unlock"}
+          </button>
+
+          {loginMessage && (
+            <div className="access-error">{loginMessage}</div>
+          )}
+        </form>
+      </main>
+    );
+  }
+
+  return (
+    <main className="app-shell windows-parity">
+      <header className="windows-menubar">
+        <div className="windows-file-actions">
+          <button onClick={() => void newParade()}>New</button>
+          <button onClick={() => paradeFileInput.current?.click()}>Open</button>
+          <button onClick={saveParadeSequence}>Save</button>
+        </div>
+
+        <div className="web-account-actions">
+          <span>{accessUser.name}</span>
+          {accessUser.role === "admin" && (
+            <button onClick={() => void openAdmin()}>Admin</button>
+          )}
+          <button onClick={() => void logout()}>Log Out</button>
+        </div>
+      </header>
+
+      <input
+        ref={paradeFileInput}
+        hidden
+        type="file"
+        accept=".json,.parade.json,application/json"
+        onChange={(e) => {
+          void openParadeSequence(e.target.files?.[0]);
+          e.currentTarget.value = "";
+        }}
+      />
+
+      <input
+        ref={libFileInput}
+        hidden
+        multiple
+        type="file"
+        accept=".lib"
+        onChange={(e) => {
+          void importLIBFiles(e.target.files);
+          e.currentTarget.value = "";
+        }}
+      />
+
+      <nav className="windows-tabs">
+        <button
+          className={tab === "editor" ? "active" : ""}
+          onClick={() => setTab("editor")}
+        >
+          Editor
+        </button>
+        <button
+          className={tab === "manager" ? "active" : ""}
+          onClick={() => setTab("manager")}
+        >
+          Manager
+        </button>
+      </nav>
+
+      {tab === "editor" ? (
+        <section className="windows-editor">
+          <div className="windows-title-row">
+            <h1>PARADE EDITOR</h1>
+            <div className="windows-import-actions">
+              <label className={`win-btn ${uploadBusy ? "disabled" : ""}`}>
+                {uploadBusy ? "Uploading…" : "+ Import Music"}
+                <input
+                  hidden
+                  multiple
+                  type="file"
+                  accept="audio/*,.wav,.mp3,.mp4,.m4a,.flac,.ogg"
+                  disabled={uploadBusy}
+                  onChange={(e) => {
+                    void importMusic(e.target.files);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+              <button onClick={() => libFileInput.current?.click()}>
+                + Import LIB
+              </button>
+            </div>
+          </div>
+
+          {(uploadBusy || uploadSuccesses.length > 0 || uploadFailures.length > 0) && (
+            <div className="upload-results windows-upload-results">
+              <div className="upload-results-header">
+                <strong>Upload Results</strong>
+                <span className="hint">
+                  {uploadOverall.done} / {uploadOverall.total || uploadSuccesses.length + uploadFailures.length}
+                </span>
+              </div>
+              {uploadBusy && uploadCurrent && (
+                <>
+                  <div className="upload-current">{uploadCurrent}</div>
+                  <div className="upload-progress-track">
+                    <div
+                      className="upload-progress-fill"
+                      style={{ width: `${uploadFilePercent}%` }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="windows-editor-main">
+            <section className="windows-library-pane">
+              <label>Music Library</label>
+              <input
+                className="windows-input"
+                placeholder="Search music track..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select
+                className="windows-input windows-category-select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option>All Categories</option>
+                {CATEGORIES.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+
+              <div className="windows-library-list">
+                {filteredTracks.map((track) => (
+                  <button
+                    type="button"
+                    key={track.id}
+                    className={`windows-library-item ${
+                      selectedLibraryId === track.id ? "selected" : ""
+                    }`}
+                    onClick={() => setSelectedLibraryId(track.id)}
+                    onDoubleClick={() => void previewMusic(track)}
+                  >
+                    <span className="timing-icon">
+                      {(track.has_lib || track.has_timing_map) ? "✅" : "❌"}
+                    </span>
+                    <span className="windows-library-copy">
+                      <strong>{displayMusicName(track)}</strong>
+                      <small>{track.category}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="windows-library-buttons">
+                <button onClick={() => void deleteSelectedLibraryTrack()}>
+                  Delete
+                </button>
+                <button onClick={() => void addSelectedLibraryTrack()}>
+                  Add to Parade →
+                </button>
+              </div>
+            </section>
+
+            <section className="windows-sequence-pane">
+              <label>Parade Sequence</label>
+              <div className="windows-sequence-table">
+                <div className="windows-sequence-header">
+                  <span>#</span>
+                  <span>Track</span>
+                  <span>Action</span>
+                  <span>Category</span>
+                </div>
+
+                <div className="windows-sequence-body">
+                  {sequence.map((item, index) => {
+                    const track = tracks.find((x) => x.id === item.track_id);
+                    if (!track) return null;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`windows-sequence-row ${
+                          selectedIndex === index ? "selected" : ""
+                        }`}
+                        draggable
+                        onClick={() => setSelectedIndex(index)}
+                        onDragStart={() => setDragIndex(index)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => {
+                          if (dragIndex !== null) void reorder(dragIndex, index);
+                          setDragIndex(null);
+                        }}
+                      >
+                        <span>{index + 1}</span>
+                        <strong>{displayMusicName(track)}</strong>
+                        <select
+                          className={`windows-action-select action-${item.action.toLowerCase()}`}
+                          value={item.action}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) =>
+                            changeAction(item, e.target.value as TrackAction)
+                          }
+                        >
+                          {allowedActions(track).map((action) => (
+                            <option key={action}>{action}</option>
+                          ))}
+                        </select>
+                        <span>{track.category}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="windows-sequence-controls">
+                <button onClick={() => void removeSelectedSequenceRow()}>
+                  Remove
+                </button>
+                <span>Drag and drop rows to reorder the Parade Sequence</span>
+                <span className="spacer" />
+                <button onClick={() => void clearParadeSequence()}>
+                  Clear
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <fieldset className="windows-preview">
+            <legend>Preview</legend>
+            <button onClick={() => void previewSelectedLibraryTrack()}>
+              ▶ Preview
+            </button>
+            <button
+              onClick={() => {
+                audio.current?.stopPreview();
+                setPreviewTrackId(null);
+              }}
+            >
+              ■ Stop
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1000"
+              value={previewTrackId ? 1 : 0}
+              readOnly
+            />
+            <span>
+              {previewTrackId
+                ? displayMusicName(tracks.find((t) => t.id === previewTrackId))
+                : ""}
+            </span>
+          </fieldset>
+        </section>
+      ) : (
+        <section className="windows-manager">
+          <div className="windows-manager-title">PARADE MANAGER</div>
+
+          <div className="windows-manager-body">
+            <div className="windows-manager-left">
+              <div className="windows-manager-top">
+                <fieldset className="windows-playlist-box">
+                  <legend>Playlist</legend>
+                  <div className="windows-playlist">
+                    {sequence.map((item, index) => {
+                      const track = tracks.find((x) => x.id === item.track_id);
+                      if (!track) return null;
+                      return (
+                        <button
+                          key={item.id}
+                          className={selectedIndex === index ? "selected" : ""}
+                          onClick={() => setSelectedIndex(index)}
+                        >
+                          <span>{String(index + 1).padStart(2, "0")}.</span>
+                          <span>{displayMusicName(track)}</span>
+                          <span
+                            className={`playlist-action-text action-${item.action.toLowerCase()}`}
+                          >
+                            [{item.action}]
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                <fieldset className="windows-actions-box">
+                  <legend>Actions</legend>
+                  <button
+                    className={endingAction === "next" ? "action-active" : ""}
+                    onClick={() => requestMusicalEnding("next")}
+                  >
+                    Next Song
+                  </button>
+                  <button
+                    className={endingAction === "end" ? "action-active" : ""}
+                    onClick={() => requestMusicalEnding("end")}
+                  >
+                    End Song
+                  </button>
+                  <button
+                    className={activeButtons.has("fade") ? "action-active" : ""}
+                    onClick={() => void fadeSelected()}
+                  >
+                    {fadeEndsAndAdvances ? "Fade End Song" : "Fade"}
+                  </button>
+                  {selectedTrack && isInterludeTrack(selectedTrack) && (
+                    <button
+                      className={`restore-button ${
+                        activeButtons.has("restore") ? "action-active" : ""
+                      }`}
+                      onClick={() => void restoreInterludeDefault()}
+                    >
+                      Restore Interlude
+                    </button>
+                  )}
+                </fieldset>
+
+                <fieldset className="windows-cues-box">
+                  <legend>Drum Cues</legend>
+                  <button
+                    className={activeButtons.has("singleCue") ? "action-active" : ""}
+                    onClick={() => scheduleManualCue("single")}
+                  >
+                    Single Beat
+                  </button>
+                  <button
+                    className={activeButtons.has("doubleCue") ? "action-active" : ""}
+                    onClick={() => scheduleManualCue("double")}
+                  >
+                    Double Beat
+                  </button>
+                  <button
+                    className={activeButtons.has("doubleDoubleCue") ? "action-active" : ""}
+                    onClick={() => scheduleManualCue("doubleDouble")}
+                  >
+                    2x Double Beat
+                  </button>
+                  <div className="windows-sync">
+                    {syncStatus}
+                  </div>
+                </fieldset>
+              </div>
+
+              <fieldset className="windows-now-playing">
+                <legend>Now Playing</legend>
+                <div className="counter">
+                  {selectedIndex !== null
+                    ? `${selectedIndex + 1} / ${sequence.length}`
+                    : `0 / ${sequence.length}`}
+                </div>
+                <div className="windows-current-title">
+                  {selectedTrack
+                    ? displayMusicName(selectedTrack)
+                    : "No Parade Music Loaded"}
+                </div>
+                <div className={`windows-current-action ${currentActionClass}`}>
+                  {currentActionLabel}
+                </div>
+                <div className="windows-next-track">
+                  {nextTrack
+                    ? `Next: ${displayMusicName(nextTrack)}`
+                    : "Next: —"}
+                </div>
+              </fieldset>
+            </div>
+
+            <div className="windows-mobile-main-controls">
+              <div className="windows-manager-progress">
+                <span>{formatTimeMs(mainPositionMs)}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={Math.max(1, mainDurationMs)}
+                  value={Math.min(mainPositionMs, Math.max(1, mainDurationMs))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    audio.current?.seekMain(value);
+                    setMainPositionMs(value);
+                  }}
+                />
+                <span>{formatTimeMs(mainDurationMs)}</span>
+              </div>
+
+              <div className="windows-transport">
+                <button onClick={playSelected}>▶ Play</button>
+                <button onClick={() => void stopSelected()}>■ Stop</button>
+              </div>
+
+              <div className="windows-volume-row">
+                <label>
+                  <span>Music Volume</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={musicVolume}
+                    onChange={(e) => setMusicVolume(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  <span>Cue Volume</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={cueVolume}
+                    onChange={(e) => setCueVolume(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <aside className="windows-interlude-column">
+              <fieldset>
+                <legend>Interlude Music</legend>
+                <div className="interlude-playing-text">
+                  {isInterludeTrack(selectedTrack)
+                    ? displayMusicName(selectedTrack)
+                    : "No Interlude Selected"}
+                </div>
+                <label className="default-box">
+                  <strong>Default %</strong>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={interludeDefault}
+                    onChange={(e) =>
+                      setInterludeDefault(
+                        Math.max(0, Math.min(100, Number(e.target.value)))
+                      )
+                    }
+                  />
+                </label>
+                <label className="default-box">
+                  <strong>Fade %</strong>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={interludeFadeTarget}
+                    onChange={(e) =>
+                      setInterludeFadeTarget(
+                        Math.max(0, Math.min(100, Number(e.target.value)))
+                      )
+                    }
+                  />
+                </label>
+                <h3>Interlude Volume</h3>
+                <div className="scale">
+                  <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+                </div>
+                <input
+                  className="volume-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={interludeLive}
+                  onChange={(e) => setInterludeLive(Number(e.target.value))}
+                />
+                <div className="live-value">{interludeLive}%</div>
+              </fieldset>
+            </aside>
+          </div>
+
+          <div className="windows-manager-progress">
+            <span>{formatTimeMs(mainPositionMs)}</span>
+            <input
+              type="range"
+              min="0"
+              max={Math.max(1, mainDurationMs)}
+              value={Math.min(mainPositionMs, Math.max(1, mainDurationMs))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                audio.current?.seekMain(value);
+                setMainPositionMs(value);
+              }}
+            />
+            <span>{formatTimeMs(mainDurationMs)}</span>
+          </div>
+
+          <div className="windows-transport">
+            <button onClick={playSelected}>▶ Play</button>
+            <button onClick={() => void stopSelected()}>■ Stop</button>
           </div>
 
           <div className="windows-volume-row">
