@@ -68,9 +68,12 @@ function allowedActions(track: Track): TrackAction[] {
 function defaultAction(track: Track): TrackAction {
   if (track.category === "Interlude Music") return "Interlude";
 
+  const normalizedTitle = track.title.trim().toLowerCase();
+
   if (
     ["Salutes", "Bugle Calls", "Fanfares"].includes(track.category) ||
-    track.title.trim().toLowerCase() === "dressing roll"
+    normalizedTitle === "dressing roll" ||
+    normalizedTitle.startsWith("dressing roll -")
   ) return "End";
 
   return "Repeat";
@@ -634,14 +637,21 @@ export default function Home() {
   }
 
   const filteredTracks = useMemo(() => {
-    return tracks.filter((track) => {
-      const textOk =
-        !search ||
-        displayMusicName(track).toLowerCase().includes(search.toLowerCase());
-      const categoryOk =
-        category === "All Categories" || track.category === category;
-      return textOk && categoryOk;
-    });
+    return tracks
+      .filter((track) => {
+        const textOk =
+          !search ||
+          displayMusicName(track).toLowerCase().includes(search.toLowerCase());
+        const categoryOk =
+          category === "All Categories" || track.category === category;
+        return textOk && categoryOk;
+      })
+      .sort((a, b) =>
+        displayMusicName(a).localeCompare(displayMusicName(b), undefined, {
+          sensitivity: "base",
+          numeric: true,
+        })
+      );
   }, [tracks, search, category]);
 
   const selected =
