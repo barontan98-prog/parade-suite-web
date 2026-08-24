@@ -1988,15 +1988,10 @@ export default function Home() {
             <aside className="windows-interlude-column">
               <fieldset>
                 <legend>Interlude Music</legend>
-                <div className="interlude-name">
+                <div className="interlude-playing-text">
                   {isInterludeTrack(selectedTrack)
                     ? displayMusicName(selectedTrack)
                     : "No Interlude Selected"}
-                </div>
-                <div className="interlude-playing-text">
-                  {audio.current?.isInterludePlaying()
-                    ? "Interlude Music Playing"
-                    : "No Interlude Music Playing"}
                 </div>
                 <label className="default-box">
                   <strong>Default %</strong>
