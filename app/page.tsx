@@ -1713,6 +1713,7 @@ export default function Home() {
                         <span>{index + 1}</span>
                         <strong>{displayMusicName(track)}</strong>
                         <select
+                          className={`windows-action-select action-${item.action.toLowerCase()}`}
                           value={item.action}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) =>

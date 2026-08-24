@@ -2781,3 +2781,89 @@ button.action-active,
     overflow-wrap: anywhere !important;
   }
 }
+
+
+/* ============================================================
+   Parade Sequence Action Dropdown — Windows-style colours
+   Full coloured box + 50% opacity arrow.
+   ============================================================ */
+.windows-sequence-row select.windows-action-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 36px !important;
+  font-weight: 700 !important;
+  background-repeat: no-repeat !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50% !important;
+}
+
+.windows-sequence-row select.windows-action-select.action-repeat {
+  color: #22f07a !important;
+  background-color: #173321 !important;
+  border-color: #22c55e !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(249,250,251,.50) 50%),
+    linear-gradient(135deg, rgba(249,250,251,.50) 50%, transparent 50%) !important;
+}
+
+.windows-sequence-row select.windows-action-select.action-end {
+  color: #ff6b6b !important;
+  background-color: #3a171b !important;
+  border-color: #ef4444 !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(249,250,251,.50) 50%),
+    linear-gradient(135deg, rgba(249,250,251,.50) 50%, transparent 50%) !important;
+}
+
+.windows-sequence-row select.windows-action-select.action-interlude {
+  color: #bfdbfe !important;
+  background-color: #172c47 !important;
+  border-color: #60a5fa !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(249,250,251,.50) 50%),
+    linear-gradient(135deg, rgba(249,250,251,.50) 50%, transparent 50%) !important;
+}
+
+/* Keep option text legible when the native menu opens. */
+.windows-sequence-row select.windows-action-select option {
+  color: #f9fafb;
+  background: #111827;
+}
+
+
+/* ============================================================
+   iPad / Tablet Manager — Playlist alignment
+   Make Playlist stretch to the same bottom edge as Actions and Drum Cues.
+   The inner playlist remains independently scrollable.
+   ============================================================ */
+@media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
+  .windows-manager-top {
+    align-items: stretch !important;
+  }
+
+  .windows-playlist-box,
+  .windows-actions-box,
+  .windows-cues-box {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  .windows-playlist-box {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .windows-playlist {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
