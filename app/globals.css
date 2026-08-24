@@ -2692,12 +2692,13 @@ button.action-active,
 }
 
 
-/* Parade Suite clicked/active operational buttons */
-.action-active,
+/* ============================================================
+   Manager UI correction
+   ============================================================ */
+
+/* Clicked/active operational buttons: dark blue with white text. */
 button.action-active,
 .big-btn.action-active,
-.transport button.action-active,
-.transport .play.action-active,
 .interlude-restore-btn.action-active,
 .windows-manager button.action-active {
   background: #1E3A8A !important;
@@ -2705,18 +2706,28 @@ button.action-active,
   color: #FFFFFF !important;
 }
 
-/* Spread Play and Stop across the available width */
-.windows-mobile-main-controls,
-.windows-main-controls,
-.transport {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 16px !important;
+/* Keep the mobile/tablet Main Controls wrapper as a normal vertical stack.
+   Do NOT turn this whole container into a 2-column grid. */
+.windows-mobile-main-controls {
+  display: block !important;
   width: 100% !important;
 }
 
-.windows-mobile-main-controls button,
-.windows-main-controls button,
-.transport button {
+/* Only Play and Stop are distributed across the screen. */
+.windows-transport {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.windows-transport button {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Preserve the progress bar and volume controls as full-width rows. */
+.windows-manager-progress,
+.windows-volume-row {
   width: 100% !important;
 }
