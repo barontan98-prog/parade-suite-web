@@ -4,10 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createTrack,
   deleteTrack,
-  deleteSequenceItem,
-  listSequence,
   listTracks,
-  saveSequenceItem,
   updateTrackTiming,
   uploadAudioFile,
 } from "@/lib/data";
@@ -181,6 +178,73 @@ export default function Home() {
 
   const [authChecked, setAuthChecked] = useState(false);
   const [accessUser, setAccessUser] = useState<AccessUser | null>(null);
+
+  // Parade Sequences are private per logged-in user.
+  // Music Library / audio / LIB timing maps remain shared.
+  function userSequenceStorageKey(userId: string) {
+    return `parade-suite-sequence:${userId}`;
+  }
+
+  function readUserSequence(userId: string): SequenceItem[] {
+    try {
+      const raw = window.localStorage.getItem(userSequenceStorageKey(userId));
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(
+          (item) =>
+            item &&
+            typeof item.id === "string" &&
+            typeof item.track_id === "string" &&
+            ["Repeat", "End", "Interlude"].includes(item.action) &&
+            Number.isFinite(Number(item.position))
+        )
+        .map((item) => ({
+          id: item.id,
+          track_id: item.track_id,
+          action: item.action as TrackAction,
+          position: Number(item.position),
+        }))
+        .sort((a, b) => a.position - b.position);
+    } catch {
+      return [];
+    }
+  }
+
+  function writeUserSequence(userId: string, items: SequenceItem[]) {
+    const normalized = [...items]
+      .sort((a, b) => a.position - b.position)
+      .map((item, index) => ({ ...item, position: index }));
+    window.localStorage.setItem(
+      userSequenceStorageKey(userId),
+      JSON.stringify(normalized)
+    );
+    return normalized;
+  }
+
+  async function saveUserSequenceItem(item: SequenceItem) {
+    if (!accessUser) return item;
+
+    const current = readUserSequence(accessUser.id);
+    const index = current.findIndex((x) => x.id === item.id);
+
+    if (index >= 0) current[index] = item;
+    else current.push(item);
+
+    writeUserSequence(accessUser.id, current);
+    return item;
+  }
+
+  async function deleteUserSequenceItem(itemId: string) {
+    if (!accessUser) return;
+
+    const next = readUserSequence(accessUser.id).filter(
+      (item) => item.id !== itemId
+    );
+    writeUserSequence(accessUser.id, next);
+  }
+
   const [loginPin, setLoginPin] = useState("");
   const [loginMessage, setLoginMessage] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
@@ -244,16 +308,20 @@ export default function Home() {
         console.error("Unable to load Music Library", error);
       });
 
-    // The parade sequence loads independently as well.
-    void listSequence()
-      .then((s) => {
-        if (cancelled) return;
+    // Each logged-in user gets an independent Parade Sequence.
+    // This is deliberately not loaded from the shared Supabase sequence table.
+    try {
+      const s = readUserSequence(accessUser.id);
+      if (!cancelled) {
         setSequence(s);
-        if (s.length) setSelectedIndex(0);
-      })
-      .catch((error) => {
-        console.error("Unable to load Parade Sequence", error);
-      });
+        setSelectedIndex(s.length ? 0 : null);
+        if (s.length) {
+          setStatus(`PRIVATE PARADE SEQUENCE • ${s.length} track${s.length === 1 ? "" : "s"}`);
+        }
+      }
+    } catch (error) {
+      console.error("Unable to load private Parade Sequence", error);
+    }
 
     return () => {
       cancelled = true;
@@ -612,11 +680,11 @@ export default function Home() {
       }
 
       // Replace only the Parade Sequence. Music/library records are untouched.
-      await Promise.all(sequence.map((item) => deleteSequenceItem(item.id)));
+      await Promise.all(sequence.map((item) => deleteUserSequenceItem(item.id)));
 
       const saved: SequenceItem[] = [];
       for (const item of resolved) {
-        saved.push(await saveSequenceItem(item));
+        saved.push(await saveUserSequenceItem(item));
       }
 
       setSequence(saved);
@@ -799,7 +867,7 @@ export default function Home() {
 
   async function newParade() {
     for (const item of sequence) {
-      await deleteSequenceItem(item.id);
+      await deleteUserSequenceItem(item.id);
     }
     setSequence([]);
     setSelectedIndex(null);
@@ -808,7 +876,7 @@ export default function Home() {
 
   async function clearParadeSequence() {
     for (const item of sequence) {
-      await deleteSequenceItem(item.id);
+      await deleteUserSequenceItem(item.id);
     }
     setSequence([]);
     setSelectedIndex(null);
@@ -852,7 +920,7 @@ export default function Home() {
 
     const attached = sequence.filter((item) => item.track_id === track.id);
     for (const item of attached) {
-      await deleteSequenceItem(item.id);
+      await deleteUserSequenceItem(item.id);
     }
 
     await deleteTrack(track.id, track.file_url);
@@ -941,7 +1009,7 @@ export default function Home() {
   }
 
   async function addTrackToSequence(track: Track) {
-    const item = await saveSequenceItem({
+    const item = await saveUserSequenceItem({
       id: crypto.randomUUID(),
       track_id: track.id,
       action: defaultAction(track),
@@ -955,19 +1023,19 @@ export default function Home() {
   async function changeAction(item: SequenceItem, action: TrackAction) {
     const updated = { ...item, action };
     setSequence((old) => old.map((x) => x.id === item.id ? updated : x));
-    await saveSequenceItem(updated);
+    await saveUserSequenceItem(updated);
   }
 
   async function removeItem(index: number) {
     const item = sequence[index];
-    await deleteSequenceItem(item.id);
+    await deleteUserSequenceItem(item.id);
 
     const next = sequence
       .filter((_, i) => i !== index)
       .map((x, i) => ({ ...x, position: i }));
 
     setSequence(next);
-    for (const x of next) await saveSequenceItem(x);
+    for (const x of next) await saveUserSequenceItem(x);
 
     if (!next.length) setSelectedIndex(null);
     else setSelectedIndex(Math.min(selectedIndex ?? 0, next.length - 1));
@@ -983,7 +1051,7 @@ export default function Home() {
     const normalized = next.map((x, i) => ({ ...x, position: i }));
     setSequence(normalized);
 
-    for (const item of normalized) await saveSequenceItem(item);
+    for (const item of normalized) await saveUserSequenceItem(item);
     setSelectedIndex(to);
   }
 
