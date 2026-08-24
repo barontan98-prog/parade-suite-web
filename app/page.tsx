@@ -40,6 +40,13 @@ const CATEGORIES = [
   "Others",
 ];
 
+function normalizeLIBCategory(value?: string | null): string | undefined {
+  const raw = (value || "").trim();
+  if (!raw) return undefined;
+  if (raw.toLowerCase() === "interlude") return "Interlude Music";
+  return CATEGORIES.includes(raw) ? raw : undefined;
+}
+
 type AccessUser = {
   id: string;
   name: string;
@@ -175,7 +182,6 @@ export default function Home() {
   const [loginBusy, setLoginBusy] = useState(false);
 
   const [adminOpen, setAdminOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminMessage, setAdminMessage] = useState("");
   const [newUserName, setNewUserName] = useState("");
@@ -214,12 +220,40 @@ export default function Home() {
   useEffect(() => {
     if (!accessUser) return;
 
-    Promise.all([listTracks(), listSequence()]).then(async ([t, s]) => {
-      const builtInTracks = await refreshTracksFromBuiltInLIBs(t);
-      setTracks(builtInTracks);
-      setSequence(s);
-      if (s.length) setSelectedIndex(0);
-    });
+    let cancelled = false;
+
+    // Load the Music Library independently and display it as soon as Supabase
+    // returns it. Do not make the operator wait for LIB/GitHub processing.
+    void listTracks()
+      .then((t) => {
+        if (cancelled) return;
+
+        setTracks(t);
+
+        // Timing maps, green ticks and LIB-derived categories are refreshed in
+        // the background after the visible library is already usable.
+        void refreshTracksFromBuiltInLIBs(t).then((refreshed) => {
+          if (!cancelled) setTracks(refreshed);
+        });
+      })
+      .catch((error) => {
+        console.error("Unable to load Music Library", error);
+      });
+
+    // The parade sequence loads independently as well.
+    void listSequence()
+      .then((s) => {
+        if (cancelled) return;
+        setSequence(s);
+        if (s.length) setSelectedIndex(0);
+      })
+      .catch((error) => {
+        console.error("Unable to load Parade Sequence", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [accessUser?.id]);
 
   useEffect(() => {
@@ -390,20 +424,19 @@ export default function Home() {
   }
 
   async function refreshTracksFromBuiltInLIBs(inputTracks: Track[]) {
-    const refreshed: Track[] = [];
+    // Keep background LIB synchronisation from creating a long serial queue.
+    // Four workers is fast enough for a large library without flooding the
+    // private GitHub/Vercel API routes.
+    const refreshed = [...inputTracks];
+    const workerCount = Math.min(4, Math.max(1, inputTracks.length));
+    let nextIndex = 0;
 
-    for (const track of inputTracks) {
+    async function refreshOne(track: Track): Promise<Track> {
       const sourceName = track.source_name || `${track.title}.wav`;
       const windowsMap = await loadWindowsTimingMap(sourceName);
       const builtIn = windowsMap?.parsed;
 
-      if (!windowsMap) {
-        console.warn(
-          `[Parade Suite] No built-in LIB match for "${sourceName}". ` +
-          `Expected normalized key from a file in legacy_timing_maps.`
-        );
-      }
-
+      const libCategory = normalizeLIBCategory(builtIn?.category);
       const desired = {
         has_lib: Boolean(windowsMap),
         has_timing_map: Boolean(builtIn?.beatMap?.length),
@@ -412,43 +445,43 @@ export default function Home() {
         repeat_end_ms: builtIn?.repeatEndMs ?? null,
         repeat_mode: builtIn?.repeatMode ?? null,
         lib_name: windowsMap?.libName ?? null,
+        ...(libCategory ? { category: libCategory } : {}),
       };
 
       const changed =
         Boolean(track.has_lib) !== desired.has_lib ||
         Boolean(track.has_timing_map) !== desired.has_timing_map ||
-        JSON.stringify(track.timing_map ?? []) !== JSON.stringify(desired.timing_map) ||
+        JSON.stringify(track.timing_map ?? []) !==
+          JSON.stringify(desired.timing_map) ||
         (track.repeat_start_ms ?? null) !== desired.repeat_start_ms ||
         (track.repeat_end_ms ?? null) !== desired.repeat_end_ms ||
         (track.repeat_mode ?? null) !== desired.repeat_mode ||
-        (track.lib_name ?? null) !== desired.lib_name;
+        (track.lib_name ?? null) !== desired.lib_name ||
+        (desired.category !== undefined && track.category !== desired.category);
 
-      if (changed) {
-        try {
-          const updated = await updateTrackTiming(track.id, desired);
-          refreshed.push(updated);
-          continue;
-        } catch (error) {
-          console.error("Built-in LIB sync failed", error);
-        }
+      if (!changed) return { ...track, ...desired };
+
+      try {
+        return await updateTrackTiming(track.id, desired);
+      } catch (error) {
+        console.error("Background LIB sync failed", error);
+        return { ...track, ...desired };
       }
-
-      refreshed.push({ ...track, ...desired });
     }
 
-    return refreshed;
-  }
+    async function worker() {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= inputTracks.length) return;
+        refreshed[index] = await refreshOne(inputTracks[index]);
+      }
+    }
 
-  function isInterludeTrack(track: Track | null | undefined) {
-    if (!track) return false;
-    const title = track.title.toLowerCase();
-    const category = (track.category || "").toLowerCase();
-
-    return (
-      category.includes("interlude") ||
-      title.startsWith("interlude") ||
-      title.includes("interlude -")
+    await Promise.all(
+      Array.from({ length: workerCount }, () => worker())
     );
+
+    return refreshed;
   }
 
   async function previewMusic(track: Track) {
@@ -689,8 +722,8 @@ export default function Home() {
         const track = await createTrack({
           title: windowsMeta.record?.title || builtIn?.title || title,
           category:
+            normalizeLIBCategory(builtIn?.category) ||
             windowsMeta.category ||
-            builtIn?.category ||
             guessCategory(file.name),
           file_url: publicUrl,
           source_name: file.name,
@@ -835,12 +868,7 @@ export default function Home() {
         // well as its timing map.  Previously the browser import only persisted
         // timing fields, so changing a LIB category (for example to
         // "Interlude Music") did not update the Music Library UI.
-        const importedCategory = (() => {
-          const raw = (parsed.category || "").trim();
-          if (!raw) return undefined;
-          if (raw.toLowerCase() === "interlude") return "Interlude Music";
-          return CATEGORIES.includes(raw) ? raw : undefined;
-        })();
+        const importedCategory = normalizeLIBCategory(parsed.category);
 
         const patch = {
           has_lib: true,
@@ -1482,8 +1510,6 @@ export default function Home() {
           <button onClick={() => void newParade()}>New</button>
           <button onClick={() => paradeFileInput.current?.click()}>Open</button>
           <button onClick={saveParadeSequence}>Save</button>
-          <span className="windows-menu-separator" aria-hidden="true">|</span>
-          <button onClick={() => setAboutOpen(true)}>About</button>
         </div>
 
         <div className="web-account-actions">
@@ -1937,33 +1963,6 @@ export default function Home() {
             </label>
           </div>
         </section>
-      )}
-
-      {aboutOpen && (
-        <div className="modal-backdrop" onMouseDown={() => setAboutOpen(false)}>
-          <section
-            className="about-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="about-parade-suite-title"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <button
-              className="about-close"
-              aria-label="Close About Parade Suite"
-              onClick={() => setAboutOpen(false)}
-            >
-              ×
-            </button>
-            <h2 id="about-parade-suite-title">Parade Suite</h2>
-            <p className="about-subtitle">Parade and Ceremonial Music Management System</p>
-            <p className="about-version">Version 1, © 2026</p>
-            <p>Built by Tan Zhong Jun Baron</p>
-            <p className="about-description">
-              Designed for the preparation and management of parade music, ceremonial cues, drum cues and timing maps.
-            </p>
-          </section>
-        </div>
       )}
 
       {adminOpen && accessUser.role === "admin" && (
