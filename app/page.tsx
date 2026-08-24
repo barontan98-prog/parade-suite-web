@@ -152,6 +152,7 @@ export default function Home() {
   const [syncStatus, setSyncStatus] = useState("Beat Sync: waiting for track");
 
   const [interludeDefault, setInterludeDefault] = useState(60);
+  const [interludeFadeTarget, setInterludeFadeTarget] = useState(10);
   const [interludeLive, setInterludeLive] = useState(60);
   const [musicVolume, setMusicVolume] = useState(80);
   const [cueVolume, setCueVolume] = useState(100);
@@ -1372,13 +1373,18 @@ export default function Home() {
         return;
       }
 
-      setStatus("INTERLUDE FADING TO 10% • 5 seconds");
+      const targetPercent = Math.max(
+        0,
+        Math.min(100, interludeFadeTarget)
+      );
+      setStatus(`INTERLUDE FADING TO ${targetPercent}% • 5 seconds`);
       await audio.current.fadeInterludeToLevel(
-        0.10,
+        targetPercent / 100,
         5000,
         (value) => setInterludeLive(Math.round(value * 100))
       );
-      setStatus("INTERLUDE AT 10%");
+      setInterludeLive(targetPercent);
+      setStatus(`INTERLUDE AT ${targetPercent}%`);
       setButtonActive("fade", false);
       return;
     }
@@ -2001,6 +2007,20 @@ export default function Home() {
                     value={interludeDefault}
                     onChange={(e) =>
                       setInterludeDefault(
+                        Math.max(0, Math.min(100, Number(e.target.value)))
+                      )
+                    }
+                  />
+                </label>
+                <label className="default-box">
+                  <strong>Fade %</strong>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={interludeFadeTarget}
+                    onChange={(e) =>
+                      setInterludeFadeTarget(
                         Math.max(0, Math.min(100, Number(e.target.value)))
                       )
                     }
