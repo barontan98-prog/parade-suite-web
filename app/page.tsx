@@ -650,6 +650,10 @@ export default function Home() {
     ? tracks.find((track) => track.id === selected.track_id) ?? null
     : null;
 
+  const fadeEndsAndAdvances =
+    selectedTrack !== null &&
+    ["Fanfares", "Inspection Tunes"].includes(selectedTrack.category);
+
   const nextItem =
     selectedIndex !== null && selectedIndex + 1 < sequence.length
       ? sequence[selectedIndex + 1]
@@ -1360,6 +1364,7 @@ export default function Home() {
 
   async function fadeSelected() {
     setButtonActive("fade", true);
+
     if (selectedTrack && isInterludeTrack(selectedTrack)) {
       if (!audio.current?.isInterludePlaying()) {
         setStatus("INTERLUDE NOT PLAYING");
@@ -1378,14 +1383,40 @@ export default function Home() {
       return;
     }
 
+    const startIndex = selectedIndex;
+    const shouldAdvance =
+      selectedTrack !== null &&
+      ["Fanfares", "Inspection Tunes"].includes(selectedTrack.category);
+
     clearScheduledTimers();
     endingGeneration.current += 1;
     setEndingQueued(false);
     audio.current?.setRepeatSuppressed(true);
-    setStatus("MUSIC FADING TO 0% • 5 seconds");
+
+    setStatus(
+      shouldAdvance
+        ? "FADE END SONG • 5 seconds"
+        : "MUSIC FADING TO 0% • 5 seconds"
+    );
+
     await audio.current?.fadeMainToStop(5000);
     audio.current?.setRepeatSuppressed(false);
-    setStatus("FADED OUT • stopped");
+
+    if (
+      shouldAdvance &&
+      startIndex !== null &&
+      startIndex + 1 < sequence.length
+    ) {
+      setSelectedIndex(startIndex + 1);
+      setStatus("FADE END SONG COMPLETE • next track selected");
+    } else {
+      setStatus(
+        shouldAdvance
+          ? "FADE END SONG COMPLETE • end of playlist"
+          : "FADED OUT • stopped"
+      );
+    }
+
     setButtonActive("fade", false);
   }
 
@@ -1821,7 +1852,7 @@ export default function Home() {
                     className={activeButtons.has("fade") ? "action-active" : ""}
                     onClick={() => void fadeSelected()}
                   >
-                    Fade
+                    {fadeEndsAndAdvances ? "Fade End Song" : "Fade"}
                   </button>
                   {selectedTrack && isInterludeTrack(selectedTrack) && (
                     <button
