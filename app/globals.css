@@ -1992,3 +1992,99 @@ button.action-active,
     margin-top: 14px;
   }
 }
+
+
+/* ============================================================
+   Phone Portrait Manager polish
+   Put Actions and Drum Cues side by side and make buttons smaller.
+   ============================================================ */
+@media (max-width: 700px) and (orientation: portrait) {
+  .windows-manager-body {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-areas:
+      "playlist playlist"
+      "nowplaying nowplaying"
+      "actions cues"
+      "interlude interlude" !important;
+    align-items: start;
+    gap: 10px;
+  }
+
+  .windows-manager-left,
+  .windows-manager-top {
+    display: contents !important;
+  }
+
+  .windows-playlist-box {
+    grid-area: playlist;
+    order: unset !important;
+    width: 100%;
+  }
+
+  .windows-now-playing {
+    grid-area: nowplaying;
+    order: unset !important;
+    width: 100%;
+    min-height: 160px;
+    padding: 12px 10px !important;
+  }
+
+  .windows-actions-box {
+    grid-area: actions;
+    order: unset !important;
+    width: 100%;
+  }
+
+  .windows-cues-box {
+    grid-area: cues;
+    order: unset !important;
+    width: 100%;
+  }
+
+  .windows-interlude-column {
+    grid-area: interlude;
+    order: unset !important;
+    width: 100%;
+  }
+
+  .windows-actions-box,
+  .windows-cues-box {
+    display: grid !important;
+    gap: 6px;
+    align-content: start;
+  }
+
+  .windows-actions-box button,
+  .windows-cues-box button {
+    min-height: 44px !important;
+    padding: 8px 6px !important;
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+  }
+
+  .windows-actions-box legend,
+  .windows-cues-box legend {
+    margin-bottom: 4px;
+  }
+
+  .windows-sync {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .windows-current-title {
+    font-size: clamp(26px, 8vw, 40px) !important;
+    line-height: 1.08 !important;
+  }
+
+  .windows-current-action {
+    min-height: 18px;
+    font-size: 16px !important;
+  }
+
+  .windows-next-track {
+    font-size: 15px !important;
+  }
+}
