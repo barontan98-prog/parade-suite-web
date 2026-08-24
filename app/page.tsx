@@ -995,17 +995,24 @@ export default function Home() {
       normalizeTrackName(sourceName) ===
       normalizeTrackName("Knights of St John.wav");
 
-    // Repeat is resolved directly from the bundled legacy .lib at playback
-    // time so stale Supabase timing metadata can never force a track back to 0.
-    // Knights of St John is the sole exception and keeps its newer custom map.
-    const runtimeLIB = isKnights
-      ? null
-      : await loadWindowsTimingMap(sourceName);
+    // Fast playback path:
+    // Background startup sync already stores the resolved LIB beat map on the
+    // track. Use that immediately instead of making Play wait for a private
+    // GitHub/Vercel request. Only fetch a LIB here when timing metadata is
+    // genuinely missing.
+    const storedBeatMap = track.timing_map ?? [];
+    const needsRuntimeLIB = !isKnights && storedBeatMap.length === 0;
+
+    const runtimeLIB = needsRuntimeLIB
+      ? await loadWindowsTimingMap(sourceName)
+      : null;
 
     const runtimeBeatMap =
-      runtimeLIB?.parsed.beatMap?.length
-        ? runtimeLIB.parsed.beatMap
-        : track.timing_map ?? [];
+      storedBeatMap.length
+        ? storedBeatMap
+        : runtimeLIB?.parsed.beatMap?.length
+          ? runtimeLIB.parsed.beatMap
+          : [];
 
     const runtimeRepeatStart = isKnights
       ? repeatStartMsForTrack(track)
@@ -1013,11 +1020,11 @@ export default function Home() {
 
     const runtimeRepeatEnd = isKnights
       ? track.repeat_end_ms
-      : runtimeLIB?.parsed.repeatEndMs ?? null;
+      : runtimeLIB?.parsed.repeatEndMs ?? track.repeat_end_ms ?? null;
 
     const runtimeRepeatMode = isKnights
       ? track.repeat_mode
-      : runtimeLIB?.parsed.repeatMode ?? null;
+      : runtimeLIB?.parsed.repeatMode ?? track.repeat_mode ?? null;
 
     await audio.current?.playMain(track.file_url, {
       action: item.action,
@@ -1055,7 +1062,9 @@ export default function Home() {
           return;
       }
 
-      await audio.current?.prepareCueAudio();
+      // Do not make the operator wait for cue WAVs to decode before the
+      // parade music starts. Cue preparation can finish in parallel.
+      void audio.current?.prepareCueAudio();
       await playIndex(selectedIndex);
     } catch (error) {
       throw error;
