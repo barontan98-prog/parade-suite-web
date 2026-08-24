@@ -321,7 +321,7 @@ export default function Home() {
     await fetch("/api/auth/logout", { method: "POST" });
     clearScheduledTimers();
     audio.current?.hardStopMain();
-    audio.current?.stopInterludeImmediately();
+    audio.current?.stopInterludeImmediately(interludeDefault / 100);
     audio.current?.stopPreview();
     setAccessUser(null);
     setTracks([]);
@@ -1506,11 +1506,9 @@ export default function Home() {
     // This prevents a stale React state value from stopping the next-row move.
     await audio.current.fadeInterludeToStop(
       5000,
-      (value) => setInterludeLive(Math.round(value * 100))
+      (value) => setInterludeLive(Math.round(value * 100)),
+      interludeDefault / 100
     );
-
-    setInterludeLive(interludeDefault);
-    audio.current.setInterludeVolume(interludeDefault / 100);
 
     if (currentIndex + 1 < sequence.length) {
       const nextIndex = currentIndex + 1;
