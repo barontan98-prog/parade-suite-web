@@ -1742,7 +1742,7 @@ button.action-active,
    Prevents the tablet/desktop manager layout from being selected
    when an iPhone is rotated horizontally.
    ============================================================ */
-@media (orientation: landscape) and (max-height: 700px) and (max-width: 1200px) {
+@media (orientation: landscape) and (max-height: 700px) and (max-width: 900px) {
   html,
   body,
   .app-shell,
@@ -2171,7 +2171,7 @@ button.action-active,
 }
 
 /* Same logical order on a phone rotated horizontally. */
-@media (orientation: landscape) and (max-height: 700px) and (max-width: 1200px) {
+@media (orientation: landscape) and (max-height: 700px) and (max-width: 900px) {
   .windows-mobile-main-controls {
     display: grid;
     order: 3;
@@ -2430,5 +2430,108 @@ button.action-active,
   .windows-actions-box,
   .windows-cues-box {
     padding: 4px 7px !important;
+  }
+}
+
+
+/* ============================================================
+   iPad / Tablet Parade Editor sequence fix
+   Keep tablet landscape out of the phone-card sequence layout.
+   Preserve normal table rows and give the sequence its own scroll area.
+   ============================================================ */
+@media (min-width: 701px) and (max-width: 1366px) {
+  .windows-editor-main {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .windows-sequence-pane {
+    min-height: 360px !important;
+  }
+
+  .windows-sequence-table {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 360px !important;
+    min-height: 360px !important;
+    max-height: 360px !important;
+    overflow: hidden !important;
+    border: 1px solid #374151 !important;
+    background: #1f2937 !important;
+  }
+
+  .windows-sequence-header {
+    display: grid !important;
+    flex: 0 0 52px;
+  }
+
+  .windows-sequence-body {
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-sequence-row {
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) 150px 190px !important;
+    grid-template-areas: none !important;
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(55,65,81,.55) !important;
+    border-radius: 0 !important;
+    background: transparent;
+    align-items: center;
+  }
+
+  .windows-sequence-row > span:first-child,
+  .windows-sequence-row > strong,
+  .windows-sequence-row > select,
+  .windows-sequence-row > span:last-child {
+    grid-area: auto !important;
+    min-width: 0;
+  }
+
+  .windows-sequence-row > span:first-child {
+    text-align: center !important;
+    padding: 0 10px !important;
+  }
+
+  .windows-sequence-row > strong {
+    display: block !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: normal !important;
+  }
+
+  .windows-sequence-row > select {
+    width: auto !important;
+    min-height: 36px !important;
+    margin: 4px 8px !important;
+    padding: 5px 30px 5px 8px !important;
+  }
+
+  .windows-sequence-row > span:last-child {
+    padding: 0 10px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* Slightly narrower tablet portrait: keep the table usable without overlap. */
+@media (min-width: 701px) and (max-width: 900px) and (orientation: portrait) {
+  .windows-sequence-row,
+  .windows-sequence-header {
+    grid-template-columns: 52px minmax(0, 1fr) 130px 150px !important;
   }
 }
