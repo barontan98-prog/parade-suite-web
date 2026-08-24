@@ -2535,3 +2535,249 @@ button.action-active,
     grid-template-columns: 52px minmax(0, 1fr) 130px 150px !important;
   }
 }
+
+
+/* ============================================================
+   FINAL PHONE PARADE SEQUENCE OVERRIDE
+   Restores the full mobile card layout after tablet-specific rules.
+   ============================================================ */
+@media (max-width: 767px) {
+  .windows-sequence-pane {
+    min-height: 0 !important;
+  }
+
+  .windows-sequence-table {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .windows-sequence-header {
+    display: none !important;
+  }
+
+  .windows-sequence-body {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    max-height: 390px !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-sequence-row {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "number track"
+      "action action"
+      "category category" !important;
+    height: auto !important;
+    min-height: 122px !important;
+    max-height: none !important;
+    gap: 8px 10px !important;
+    padding: 12px !important;
+    border: 1px solid #374151 !important;
+    border-radius: 8px !important;
+    background: #1f2937 !important;
+    align-items: center !important;
+  }
+
+  .windows-sequence-row.selected {
+    background: rgba(37, 99, 235, .24) !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .windows-sequence-row > span:first-child {
+    display: block !important;
+    grid-area: number !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  .windows-sequence-row > strong {
+    display: block !important;
+    grid-area: track !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+    line-height: 1.25 !important;
+  }
+
+  .windows-sequence-row > select {
+    display: block !important;
+    grid-area: action !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    height: 42px !important;
+    margin: 0 !important;
+    padding: 7px 34px 7px 10px !important;
+  }
+
+  .windows-sequence-row > span:last-child {
+    display: block !important;
+    grid-area: category !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+
+
+/* ============================================================
+   iPad / Tablet Playlist Fill Fix
+   Make the scrollable playlist consume the entire Playlist fieldset.
+   ============================================================ */
+@media (min-width: 701px) and (max-width: 1366px) {
+  .windows-playlist-box {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 220px !important;
+    min-height: 220px !important;
+    max-height: 220px !important;
+    padding: 8px 10px 10px !important;
+    overflow: hidden !important;
+  }
+
+  .windows-playlist {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* iPad landscape: use a slightly taller playlist while still keeping
+   the Manager compact enough for the controls below. */
+@media (min-width: 701px) and (max-width: 1366px) and (orientation: landscape) {
+  .windows-playlist-box {
+    height: 205px !important;
+    min-height: 205px !important;
+    max-height: 205px !important;
+  }
+}
+
+
+/* ============================================================
+   DEVICE-WIDTH PHONE SAFETY OVERRIDE
+   This must remain LAST in the stylesheet.
+   ============================================================ */
+@media screen and (max-width: 767px) {
+  .windows-sequence-pane {
+    min-height: 0 !important;
+  }
+
+  .windows-sequence-table {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .windows-sequence-header {
+    display: none !important;
+  }
+
+  .windows-sequence-body {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    max-height: 410px !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .windows-sequence-row {
+    display: grid !important;
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "number track"
+      "action action"
+      "category category" !important;
+    height: auto !important;
+    min-height: 128px !important;
+    max-height: none !important;
+    gap: 9px 10px !important;
+    padding: 12px !important;
+    border: 1px solid #374151 !important;
+    border-radius: 9px !important;
+    background: #1f2937 !important;
+    align-items: center !important;
+  }
+
+  .windows-sequence-row.selected {
+    background: rgba(37, 99, 235, .24) !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .windows-sequence-row > span:first-child {
+    grid-area: number !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  .windows-sequence-row > strong {
+    grid-area: track !important;
+    display: block !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+    line-height: 1.25 !important;
+  }
+
+  .windows-sequence-row > select {
+    grid-area: action !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 7px 34px 7px 10px !important;
+  }
+
+  .windows-sequence-row > span:last-child {
+    grid-area: category !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+  }
+}
