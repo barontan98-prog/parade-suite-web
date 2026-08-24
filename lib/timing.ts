@@ -266,23 +266,18 @@ export function repeatStartMsForTrack(track: Track): number {
 export async function loadWindowsTimingMap(
   audioName: string
 ): Promise<{ parsed: ParsedLIB; libName: string } | null> {
+  // 1. A LIB explicitly imported in this browser remains the highest-priority
+  //    temporary override.
   const imported = localImportedLIBForAudio(audioName);
   if (imported) return imported;
 
-  try {
-    const indexResponse = await fetch("/generated_timing_maps/index.json?v=0.129", {
-      cache: "no-store",
-    });
-    if (!indexResponse.ok) return null;
+  const key = normalizeTrackName(audioName);
 
-    const index = (await indexResponse.json()) as Record<string, string>;
-    const key = normalizeTrackName(audioName);
-
-    // Exact Windows source order:
-    // 1. exact normalized name against bundled index
+  // Shared matching helper used for both the private GitHub repository and the
+  // bundled compatibility maps.
+  function chooseMappedName(index: Record<string, string>): string | undefined {
     let mappedName = index[key];
 
-    // 2. conservative containment match >= 0.72
     if (!mappedName) {
       const candidates: Array<[number, string]> = [];
 
@@ -294,9 +289,7 @@ export async function loadWindowsTimingMap(
             Math.min(key.length, knownKey.length) /
             Math.max(key.length, knownKey.length);
 
-          if (score >= 0.72) {
-            candidates.push([score, filename]);
-          }
+          if (score >= 0.72) candidates.push([score, filename]);
         }
       }
 
@@ -309,10 +302,61 @@ export async function loadWindowsTimingMap(
       }
     }
 
+    return mappedName;
+  }
+
+  // 2. Private GitHub LIB repository.
+  //
+  // The browser never receives the GitHub token. These endpoints are server
+  // routes in this Next.js app and require a valid Parade Suite session.
+  try {
+    const remoteIndexResponse = await fetch("/api/lib-maps/index", {
+      cache: "no-store",
+    });
+
+    if (remoteIndexResponse.ok) {
+      const remoteIndex =
+        (await remoteIndexResponse.json()) as Record<string, string>;
+      const remotePath = chooseMappedName(remoteIndex);
+
+      if (remotePath) {
+        const remoteLIBResponse = await fetch(
+          `/api/lib-maps/file?path=${encodeURIComponent(remotePath)}`,
+          { cache: "no-store" }
+        );
+
+        if (remoteLIBResponse.ok) {
+          return {
+            parsed: parseLegacyLIB(await remoteLIBResponse.text()),
+            libName: remotePath.split("/").pop() || remotePath,
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(
+      `[Parade Suite] Private GitHub LIB lookup unavailable for "${audioName}".`,
+      error
+    );
+  }
+
+  // 3. Bundled legacy_timing_maps compatibility fallback.
+  //
+  // This means the existing deployment keeps working while you migrate maps to
+  // the new private repository. New/updated maps in GitHub take priority.
+  try {
+    const indexResponse = await fetch("/generated_timing_maps/index.json?v=0.162", {
+      cache: "no-store",
+    });
+    if (!indexResponse.ok) return null;
+
+    const index = (await indexResponse.json()) as Record<string, string>;
+    const mappedName = chooseMappedName(index);
+
     if (!mappedName) return null;
 
     const response = await fetch(
-      `/generated_timing_maps/${encodeURIComponent(mappedName)}?v=0.129`,
+      `/generated_timing_maps/${encodeURIComponent(mappedName)}?v=0.162`,
       { cache: "no-store" }
     );
     if (!response.ok) return null;
