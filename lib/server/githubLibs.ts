@@ -13,7 +13,7 @@ export function githubLibConfig() {
     token: required("PARADE_LIB_GITHUB_TOKEN"),
     branch: process.env.PARADE_LIB_GITHUB_BRANCH?.trim() || "main",
     folder:
-      (process.env.PARADE_LIB_GITHUB_FOLDER?.trim() || "legacy_timing_maps")
+      (process.env.PARADE_LIB_GITHUB_FOLDER?.trim() || "")
         .replace(/^\/+|\/+$/g, ""),
   };
 }
@@ -37,9 +37,11 @@ export async function listPrivateLIBFiles(): Promise<
     .map(encodeURIComponent)
     .join("/");
 
+  const contentsPath = encodedFolder ? `/contents/${encodedFolder}` : `/contents`;
+
   const url =
     `https://api.github.com/repos/${encodeURIComponent(owner)}/` +
-    `${encodeURIComponent(repo)}/contents/${encodedFolder}` +
+    `${encodeURIComponent(repo)}${contentsPath}` +
     `?ref=${encodeURIComponent(branch)}`;
 
   const response = await fetch(url, {
@@ -83,9 +85,13 @@ export async function readPrivateLIBFile(path: string): Promise<string> {
   const normalizedPath = path.replace(/^\/+/, "");
   const normalizedFolder = folder.replace(/^\/+|\/+$/g, "");
 
+  const outsideConfiguredFolder =
+    normalizedFolder &&
+    !normalizedPath.startsWith(`${normalizedFolder}/`);
+
   if (
     !normalizedPath.toLowerCase().endsWith(".lib") ||
-    !normalizedPath.startsWith(`${normalizedFolder}/`)
+    outsideConfiguredFolder
   ) {
     throw new Error("Invalid LIB path.");
   }
