@@ -1857,6 +1857,70 @@ export default function Home() {
               </fieldset>
             </div>
 
+            <div className="windows-mobile-main-controls">
+              <div className="windows-manager-progress">
+                <span>{formatTimeMs(mainPositionMs)}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={Math.max(1, mainDurationMs)}
+                  value={Math.min(mainPositionMs, Math.max(1, mainDurationMs))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    audio.current?.seekMain(value);
+                    setMainPositionMs(value);
+                  }}
+                />
+                <span>{formatTimeMs(mainDurationMs)}</span>
+              </div>
+
+              <div className="windows-transport">
+                <button
+                  onClick={() =>
+                    selectedIndex !== null &&
+                    setSelectedIndex(Math.max(0, selectedIndex - 1))
+                  }
+                >
+                  ⏮ Previous
+                </button>
+                <button onClick={playSelected}>▶ Play</button>
+                <button onClick={() => void stopSelected()}>■ Stop</button>
+                <button
+                  onClick={() =>
+                    selectedIndex !== null &&
+                    setSelectedIndex(
+                      Math.min(sequence.length - 1, selectedIndex + 1)
+                    )
+                  }
+                >
+                  Immediate Skip ⏭
+                </button>
+              </div>
+
+              <div className="windows-volume-row">
+                <label>
+                  <span>Music Volume</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={musicVolume}
+                    onChange={(e) => setMusicVolume(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  <span>Cue Volume</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={cueVolume}
+                    onChange={(e) => setCueVolume(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+            </div>
+
             <aside className="windows-interlude-column">
               <fieldset>
                 <legend>Interlude Music</legend>
