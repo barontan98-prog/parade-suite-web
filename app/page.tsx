@@ -157,6 +157,7 @@ export default function Home() {
   const [musicVolume, setMusicVolume] = useState(80);
   const [cueVolume, setCueVolume] = useState(100);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const touchDragIndex = useRef<number | null>(null);
   const [endingQueued, setEndingQueued] = useState(false);
   const [endingAction, setEndingAction] = useState<"end" | "next" | null>(null);
   const [activeButtons, setActiveButtons] = useState<Set<string>>(
@@ -1842,6 +1843,7 @@ export default function Home() {
                     return (
                       <div
                         key={item.id}
+                        data-sequence-index={index}
                         className={`windows-sequence-row ${
                           selectedIndex === index ? "selected" : ""
                         }`}
@@ -1854,7 +1856,41 @@ export default function Home() {
                           setDragIndex(null);
                         }}
                       >
-                        <span>{index + 1}</span>
+                        <span
+                          className="sequence-drag-handle"
+                          title="Drag to reorder"
+                          aria-label="Drag to reorder"
+                          onTouchStart={(e) => {
+                            touchDragIndex.current = index;
+                            setSelectedIndex(index);
+                            if (e.cancelable) e.preventDefault();
+                          }}
+                          onTouchMove={(e) => {
+                            // Prevent page scrolling while the operator is actively
+                            // dragging the dedicated sequence handle.
+                            if (touchDragIndex.current !== null && e.cancelable) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            const from = touchDragIndex.current;
+                            touchDragIndex.current = null;
+                            if (from === null) return;
+
+                            const touch = e.changedTouches[0];
+                            if (!touch) return;
+                            const target = document
+                              .elementFromPoint(touch.clientX, touch.clientY)
+                              ?.closest<HTMLElement>("[data-sequence-index]");
+                            const to = Number(target?.dataset.sequenceIndex);
+                            if (Number.isInteger(to) && to >= 0 && to < sequence.length) {
+                              void reorder(from, to);
+                            }
+                          }}
+                          style={{ touchAction: "none", userSelect: "none" }}
+                        >
+                          {index + 1}
+                        </span>
                         <strong>{displayMusicName(track)}</strong>
                         <select
                           className={`windows-action-select action-${item.action.toLowerCase()}`}
