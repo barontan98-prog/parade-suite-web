@@ -1218,13 +1218,28 @@ export class AudioEngine {
       : level;
 
     const duckLevel = Math.max(0, Math.min(normalLevel, requestedLevel));
-    this.main.volume = duckLevel;
+
+    if (this.isPhoneBrowser() && this.mainGain) {
+      // Phone Safari/Chrome: the march is already routed through WebAudio for
+      // reliable Fade. Duck that same audible GainNode instead of changing
+      // HTMLMediaElement.volume, which mobile Safari may ignore while playing.
+      // `level` is a ratio when relativeToCurrent=true, so a 30% cue duck
+      // becomes gain=0.30 regardless of the operator's Music Volume setting.
+      const gainRatio = normalLevel > 0 ? duckLevel / normalLevel : 0;
+      this.setMainGain(gainRatio);
+    } else {
+      this.main.volume = duckLevel;
+    }
 
     window.setTimeout(() => {
       if (generation !== this.duckGeneration) return;
 
       if (this.isMainPlaying()) {
-        this.main.volume = this.musicVolume;
+        if (this.isPhoneBrowser() && this.mainGain) {
+          this.setMainGain(1.0);
+        } else {
+          this.main.volume = this.musicVolume;
+        }
       }
     }, Math.max(80, Math.round(durationMs)));
   }
