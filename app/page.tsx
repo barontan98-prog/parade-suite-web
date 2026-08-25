@@ -1856,100 +1856,98 @@ export default function Home() {
                           setDragIndex(null);
                         }}
                       >
-                        <span
-                          className="sequence-drag-handle"
-                          title="Drag to reorder"
-                          aria-label="Drag to reorder"
-                          onTouchStart={(e) => {
-                            touchDragIndex.current = index;
-                            setSelectedIndex(index);
-                            if (e.cancelable) e.preventDefault();
-                          }}
-                          onTouchMove={(e) => {
-                            // Prevent page scrolling while the operator is actively
-                            // dragging the dedicated sequence handle.
-                            if (touchDragIndex.current !== null && e.cancelable) {
-                              e.preventDefault();
-                            }
-                          }}
-                          onTouchEnd={(e) => {
-                            const from = touchDragIndex.current;
-                            touchDragIndex.current = null;
-                            if (from === null) return;
-
-                            const touch = e.changedTouches[0];
-                            if (!touch) return;
-                            const target = document
-                              .elementFromPoint(touch.clientX, touch.clientY)
-                              ?.closest<HTMLElement>("[data-sequence-index]");
-                            const to = Number(target?.dataset.sequenceIndex);
-                            if (Number.isInteger(to) && to >= 0 && to < sequence.length) {
-                              void reorder(from, to);
-                            }
-                          }}
+                        <div
+                          className="sequence-track-line"
                           style={{
-                            touchAction: "none",
-                            userSelect: "none",
-                            display: "inline-flex",
+                            gridColumn: "1 / span 2",
+                            display: "flex",
                             alignItems: "center",
-                            justifyContent: "flex-start",
-                            gap: "0px",
-                            cursor: "grab",
-                            minWidth: "0",
+                            minWidth: 0,
                             width: "100%",
-                            height: "24px",
-                            lineHeight: 1,
-                            verticalAlign: "middle",
+                            gap: "12px",
                           }}
                         >
                           <span
-                            aria-hidden="true"
+                            className="sequence-drag-handle"
+                            title="Drag to reorder"
+                            aria-label="Drag to reorder"
+                            onTouchStart={(e) => {
+                              touchDragIndex.current = index;
+                              setSelectedIndex(index);
+                              if (e.cancelable) e.preventDefault();
+                            }}
+                            onTouchMove={(e) => {
+                              if (touchDragIndex.current !== null && e.cancelable) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onTouchEnd={(e) => {
+                              const from = touchDragIndex.current;
+                              touchDragIndex.current = null;
+                              if (from === null) return;
+
+                              const touch = e.changedTouches[0];
+                              if (!touch) return;
+                              const target = document
+                                .elementFromPoint(touch.clientX, touch.clientY)
+                                ?.closest<HTMLElement>("[data-sequence-index]");
+                              const to = Number(target?.dataset.sequenceIndex);
+                              if (Number.isInteger(to) && to >= 0 && to < sequence.length) {
+                                void reorder(from, to);
+                              }
+                            }}
                             style={{
+                              touchAction: "none",
+                              userSelect: "none",
                               display: "inline-flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "20px",
-                              fontWeight: 700,
-                              lineHeight: 1,
-                              letterSpacing: "-2px",
-                              height: "24px",
-                            }}
-                          >
-                            ≡
-                          </span>
-                          <span
-                            aria-hidden="true"
-                            style={{
-                              display: "inline-block",
-                              width: "12px",
-                              minWidth: "12px",
-                              flex: "0 0 12px",
-                            }}
-                          />
-                          <span
-                            style={{
-                              flexShrink: 0,
-                              display: "inline-flex",
-                              alignItems: "center",
+                              flex: "0 0 auto",
+                              gap: "10px",
+                              cursor: "grab",
                               height: "24px",
                               lineHeight: 1,
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            {index + 1}
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "20px",
+                                fontWeight: 700,
+                                lineHeight: 1,
+                                height: "24px",
+                              }}
+                            >
+                              ≡
+                            </span>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                height: "24px",
+                                lineHeight: 1,
+                              }}
+                            >
+                              {index + 1}
+                            </span>
                           </span>
-                        </span>
-                        <strong
-                          className="sequence-track-title"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            minHeight: "24px",
-                            lineHeight: 1.2,
-                            margin: 0,
-                          }}
-                        >
-                          {displayMusicName(track)}
-                        </strong>
+
+                          <strong
+                            className="sequence-track-title"
+                            style={{
+                              display: "block",
+                              minWidth: 0,
+                              flex: "1 1 auto",
+                              lineHeight: 1.25,
+                              margin: 0,
+                            }}
+                          >
+                            {displayMusicName(track)}
+                          </strong>
+                        </div>
                         <select
                           className={`windows-action-select action-${item.action.toLowerCase()}`}
                           value={item.action}
@@ -2377,19 +2375,32 @@ export default function Home() {
       )}
 
       <style jsx global>{`
+        .sequence-track-line {
+          align-self: center;
+        }
+
         @media (max-width: 600px) {
+          .sequence-track-line {
+            grid-column: 1 / -1 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            min-width: 0 !important;
+          }
+
           .sequence-drag-handle {
             display: inline-flex !important;
             align-items: center !important;
-            gap: 0 !important;
-            min-width: 0 !important;
-            width: 100% !important;
-            padding-right: 0;
-            flex-shrink: 0 !important;
+            gap: 10px !important;
+            width: auto !important;
+            min-width: auto !important;
+            flex: 0 0 auto !important;
             white-space: nowrap;
           }
+
           .sequence-track-title {
-            margin-left: 10px !important;
+            margin: 0 !important;
+            min-width: 0 !important;
           }
         }
       `}</style>
