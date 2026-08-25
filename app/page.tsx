@@ -1895,7 +1895,8 @@ export default function Home() {
                             justifyContent: "flex-start",
                             gap: "0px",
                             cursor: "grab",
-                            minWidth: "56px",
+                            minWidth: "0",
+                            width: "100%",
                             height: "24px",
                             lineHeight: 1,
                             verticalAlign: "middle",
@@ -1938,6 +1939,7 @@ export default function Home() {
                           </span>
                         </span>
                         <strong
+                          className="sequence-track-title"
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -2380,10 +2382,14 @@ export default function Home() {
             display: inline-flex !important;
             align-items: center !important;
             gap: 0 !important;
-            min-width: 64px !important;
-            padding-right: 6px;
+            min-width: 0 !important;
+            width: 100% !important;
+            padding-right: 0;
             flex-shrink: 0 !important;
             white-space: nowrap;
+          }
+          .sequence-track-title {
+            margin-left: 10px !important;
           }
         }
       `}</style>
