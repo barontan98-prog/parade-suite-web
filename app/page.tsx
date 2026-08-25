@@ -1237,12 +1237,19 @@ export default function Home() {
     // IMPORTANT iOS fix:
     // schedule the AudioBufferSourceNode NOW on the WebAudio clock.
     // Do not wait until the cue time and then call play().
-    const firstScheduled = await engine.scheduleCueFile(
-      filename,
-      delay,
-      950,
-      0.30
-    );
+    const firstScheduled = engine.isPhoneBrowser()
+      ? await engine.scheduleCueFileAtMainPosition(
+          filename,
+          target - 45,
+          950,
+          0.30
+        )
+      : await engine.scheduleCueFile(
+          filename,
+          delay,
+          950,
+          0.30
+        );
 
     if (!firstScheduled) {
       // Fallback only if WebAudio scheduling itself is unavailable.
@@ -1257,12 +1264,19 @@ export default function Home() {
       const fullInterval = row?.full_ms ?? 500;
       const secondDelay = delay + (2 * fullInterval);
 
-      const secondScheduled = await engine.scheduleCueFile(
-        filename,
-        secondDelay,
-        950,
-        0.30
-      );
+      const secondScheduled = engine.isPhoneBrowser()
+        ? await engine.scheduleCueFileAtMainPosition(
+            filename,
+            target - 45 + (2 * fullInterval),
+            950,
+            0.30
+          )
+        : await engine.scheduleCueFile(
+            filename,
+            secondDelay,
+            950,
+            0.30
+          );
 
       if (!secondScheduled) {
         schedule(
@@ -1366,9 +1380,17 @@ export default function Home() {
       `Ending sync: sequence starts at ${(cueStart / 1000).toFixed(2)}s • target phrase ${(target / 1000).toFixed(2)}s`
     );
 
-    schedule(delay, () => {
-      void (async () => {
-        if (generation !== endingGeneration.current) return;
+    void (async () => {
+      if (engine.isPhoneBrowser()) {
+        const reached = await engine.waitForMainPosition(cueStart);
+        if (!reached) return;
+      } else {
+        await new Promise<void>((resolve) => {
+          schedule(delay, resolve);
+        });
+      }
+
+      if (generation !== endingGeneration.current) return;
 
         // Exact Windows authoritative trigger: wait for the actual ending WAV
         // to reach EndOfMedia, then hard-stop/unload the march.
@@ -1402,8 +1424,7 @@ export default function Home() {
             setStatus("SONG ENDED • end of playlist");
           }
         }
-      })();
-    });
+    })();
 
     // Same Windows fallback watchdog: 12 s after cue delay.
     schedule(delay + 12000, () => {
