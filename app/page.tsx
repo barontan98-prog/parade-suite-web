@@ -1892,18 +1892,26 @@ export default function Home() {
                             userSelect: "none",
                             display: "inline-flex",
                             alignItems: "center",
+                            justifyContent: "flex-start",
                             gap: "0px",
                             cursor: "grab",
-                            minWidth: "50px",
+                            minWidth: "56px",
+                            height: "24px",
+                            lineHeight: 1,
+                            verticalAlign: "middle",
                           }}
                         >
                           <span
                             aria-hidden="true"
                             style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                               fontSize: "20px",
                               fontWeight: 700,
                               lineHeight: 1,
                               letterSpacing: "-2px",
+                              height: "24px",
                             }}
                           >
                             ≡
@@ -1917,9 +1925,29 @@ export default function Home() {
                               flex: "0 0 12px",
                             }}
                           />
-                          <span style={{ flexShrink: 0 }}>{index + 1}</span>
+                          <span
+                            style={{
+                              flexShrink: 0,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              height: "24px",
+                              lineHeight: 1,
+                            }}
+                          >
+                            {index + 1}
+                          </span>
                         </span>
-                        <strong>{displayMusicName(track)}</strong>
+                        <strong
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            minHeight: "24px",
+                            lineHeight: 1.2,
+                            margin: 0,
+                          }}
+                        >
+                          {displayMusicName(track)}
+                        </strong>
                         <select
                           className={`windows-action-select action-${item.action.toLowerCase()}`}
                           value={item.action}
@@ -2352,8 +2380,8 @@ export default function Home() {
             display: inline-flex !important;
             align-items: center !important;
             gap: 0 !important;
-            min-width: 58px !important;
-            padding-right: 4px;
+            min-width: 64px !important;
+            padding-right: 6px;
             flex-shrink: 0 !important;
             white-space: nowrap;
           }
