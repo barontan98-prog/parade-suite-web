@@ -1887,9 +1887,28 @@ export default function Home() {
                               void reorder(from, to);
                             }
                           }}
-                          style={{ touchAction: "none", userSelect: "none" }}
+                          style={{
+                            touchAction: "none",
+                            userSelect: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            cursor: "grab",
+                            minWidth: "50px",
+                          }}
                         >
-                          {index + 1}
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              fontSize: "20px",
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              letterSpacing: "-2px",
+                            }}
+                          >
+                            ≡
+                          </span>
+                          <span>{index + 1}</span>
                         </span>
                         <strong>{displayMusicName(track)}</strong>
                         <select
