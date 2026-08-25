@@ -1150,7 +1150,7 @@ export class AudioEngine {
 
       const fallbackMs = isKnights ? 4200 : 4500;
       const endingDuckLevel = isKnights ? 0.15 : 0.30;
-      this.duckMusicForCue(fallbackMs + 250, endingDuckLevel, true);
+      this.duckMusicForCue(fallbackMs + 250, endingDuckLevel, false);
 
       return new Promise<void>(async (resolve) => {
         const finish = () => {
@@ -1165,9 +1165,9 @@ export class AudioEngine {
     const durationMs = Math.round(buffer.duration * 1000);
 
     // Knights of St John ending needs more separation from the march.
-    // Standard ending stays at 30%; Knights ducks the march to 15%.
+    // Exact Windows behavior: standard ending uses absolute 30%; Knights uses absolute 15%.
     const endingDuckLevel = isKnights ? 0.15 : 0.30;
-    this.duckMusicForCue(durationMs + 250, endingDuckLevel, true);
+    this.duckMusicForCue(durationMs + 250, endingDuckLevel, false);
 
     const source = context.createBufferSource();
     const gain = context.createGain();
