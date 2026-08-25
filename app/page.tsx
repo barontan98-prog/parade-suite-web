@@ -1892,7 +1892,7 @@ export default function Home() {
                             userSelect: "none",
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "8px",
+                            gap: "0px",
                             cursor: "grab",
                             minWidth: "50px",
                           }}
@@ -1908,7 +1908,16 @@ export default function Home() {
                           >
                             ≡
                           </span>
-                          <span>{index + 1}</span>
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              display: "inline-block",
+                              width: "12px",
+                              minWidth: "12px",
+                              flex: "0 0 12px",
+                            }}
+                          />
+                          <span style={{ flexShrink: 0 }}>{index + 1}</span>
                         </span>
                         <strong>{displayMusicName(track)}</strong>
                         <select
@@ -2342,7 +2351,7 @@ export default function Home() {
           .sequence-drag-handle {
             display: inline-flex !important;
             align-items: center !important;
-            gap: 10px !important;
+            gap: 0 !important;
             min-width: 58px !important;
             padding-right: 4px;
             flex-shrink: 0 !important;
