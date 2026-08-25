@@ -2337,6 +2337,18 @@ export default function Home() {
         </div>
       )}
 
+      <style jsx global>{`
+        @media (max-width: 600px) {
+          .sequence-drag-handle {
+            gap: 10px !important;
+            min-width: 58px !important;
+            padding-right: 4px;
+            flex-shrink: 0 !important;
+            white-space: nowrap;
+          }
+        }
+      `}</style>
+
     </main>
   );
 }
