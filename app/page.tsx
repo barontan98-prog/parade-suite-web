@@ -2340,6 +2340,8 @@ export default function Home() {
       <style jsx global>{`
         @media (max-width: 600px) {
           .sequence-drag-handle {
+            display: inline-flex !important;
+            align-items: center !important;
             gap: 10px !important;
             min-width: 58px !important;
             padding-right: 4px;
