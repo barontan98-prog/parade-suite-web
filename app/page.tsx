@@ -2313,7 +2313,7 @@ export default function Home() {
                         ["New", "Starts a new Parade Sequence.", "Use when preparing a different parade programme.", "The current working sequence is cleared after confirmation."],
                         ["Open", "Opens a saved Parade Sequence.", "Use to reload a prepared parade programme.", "Required music should already be in the Music Library."],
                         ["Save", "Saves the current Parade Sequence.", "Use after arranging tracks and actions.", "Save regularly before operational use."],
-                        ["About", "Shows Parade Suite version, purpose and developer information.", "Use when checking application information.", "This does not change Parade Suite settings."],
+                        ["About", "", "", ""],
                         ["Guidebook", "Opens this interactive Guidebook.", "Use whenever an operator needs help.", "The Guidebook is read-only and cannot operate parade audio."],
                       ].map(([title, functionText, whenText, notes]) => (
                         <button key={title} className="guide-clickable" onClick={() => setGuideTopic({title,functionText,whenText,notes})}>{title}</button>
@@ -2355,9 +2355,9 @@ export default function Home() {
                         <div className="windows-sequence-table">
                           <div className="windows-sequence-header"><span>#</span><span>Track</span><span>Action</span><span>Category</span></div>
                           <div className="windows-sequence-body">
-                            <div className="windows-sequence-row selected"><span className="guide-clickable" onClick={() => setGuideTopic({title:"Sequence Row / Drag Handle",functionText:"Selects and reorders a Parade Sequence item.",whenText:"Drag when changing the programme order.",notes:"On touch devices use the ≡ handle and number area."})}>≡  1</span><strong>New Knights of St John</strong><button className="guide-inline-action action-repeat" onClick={() => setGuideTopic({title:"Repeat",functionText:"Sets this sequence item to repeat using the track's configured Parade Suite repeat behaviour instead of ending naturally.",whenText:"Use for music that must continue or loop until the operator deliberately ends or changes it.",notes:"Repeat is a Parade Sequence action, not a live playback button. It is shown in green."})}>Repeat</button><span>Fast March</span></div>
+                            <div className="windows-sequence-row selected"><span className="guide-clickable" onClick={() => setGuideTopic({title:"Sequence Row / Drag Handle",functionText:"Selects and reorders a Parade Sequence item.",whenText:"Drag when changing the programme order.",notes:"On touch devices use the ≡ handle and number area."})}>≡  1</span><strong>Guard of Honour March</strong><button className="guide-inline-action action-repeat" onClick={() => setGuideTopic({title:"Repeat",functionText:"Sets this sequence item to repeat using the track's configured Parade Suite repeat behaviour instead of ending naturally.",whenText:"Use for music that must continue or loop until the operator deliberately ends or changes it.",notes:"Repeat is a Parade Sequence action, not a live playback button. It is shown in green."})}>Repeat</button><span>Fast March</span></div>
                             <div className="windows-sequence-row"><span>≡  2</span><strong>Advance in Review Order</strong><button className="guide-inline-action action-end" onClick={() => setGuideTopic({title:"End",functionText:"Sets this sequence item as an ending track. When it reaches its natural end, Parade Suite stops it and selects the next sequence item without automatically playing the next track.",whenText:"Use when the music should finish once and the operator must decide when the next item starts.",notes:"End is a Parade Sequence action and is shown in red. It is different from the live End Song button."})}>End</button><span>Salutes</span></div>
-                            <div className="windows-sequence-row"><span>≡  3</span><strong>Corp of Drum Solo</strong><button className="guide-inline-action action-end" onClick={() => setGuideTopic({title:"End",functionText:"Sets this sequence item as an ending track. When it reaches its natural end, Parade Suite stops it and selects the next sequence item without automatically playing the next track.",whenText:"Use when the music should finish once and the operator must decide when the next item starts.",notes:"End is a Parade Sequence action and is shown in red. It is different from the live End Song button."})}>End</button><span>Drum Solo</span></div>
+                            <div className="windows-sequence-row"><span>≡  3</span><strong>Interlude - Viva La Vida</strong><button className="guide-inline-action action-interlude" onClick={() => setGuideTopic({title:"Interlude",functionText:"Routes this sequence item through the independent Interlude Music channel.",whenText:"Use for transition or background music that should be controlled from the Interlude Music panel.",notes:"Interlude is shown in light blue and uses its own Play / Loop, Stop, volume and fade controls."})}>Interlude</button><span>Interlude Music</span></div>
                           </div>
                         </div>
                         <div className="windows-sequence-controls">
@@ -2420,7 +2420,20 @@ export default function Home() {
               </div>
 
               <aside className="guide-explanation-panel">
-                {guideTopic ? <><div className="guide-explanation-label">Selected control</div><h3>{guideTopic.title}</h3><h4>What it does</h4><p>{guideTopic.functionText}</p><h4>When to use it</h4><p>{guideTopic.whenText}</p><h4>Important notes</h4><p>{guideTopic.notes}</p></> : <><div className="guide-explanation-label">Guide mode</div><h3>Click a control in the mirrored interface</h3><p>The page on the left uses the same Parade Suite layout and styling as the operational interface, but it is read-only.</p><p>Click a control to display its explanation here. Nothing in Guide mode can start or stop parade audio.</p></>}
+                {guideTopic ? (
+                  guideTopic.title === "About" ? (
+                    <>
+                      <div className="guide-explanation-label">About Parade Suite</div>
+                      <h3>Parade Suite</h3>
+                      <div className="guide-about-credit">Parade and Ceremonial Music Management System</div>
+                      <div className="guide-about-version"><strong>Version 1, © 2026</strong></div>
+                      <div className="guide-about-credit">Built by Tan Zhong Jun Baron</div>
+                      <p>Designed for the preparation and management of parade music, ceremonial cues, drum cues and timing maps.</p>
+                    </>
+                  ) : (
+                    <><div className="guide-explanation-label">Selected control</div><h3>{guideTopic.title}</h3><h4>What it does</h4><p>{guideTopic.functionText}</p><h4>When to use it</h4><p>{guideTopic.whenText}</p><h4>Important notes</h4><p>{guideTopic.notes}</p></>
+                  )
+                ) : <><div className="guide-explanation-label">Guide mode</div><h3>Click a control in the mirrored interface</h3><p>The page on the left uses the same Parade Suite layout and styling as the operational interface, but it is read-only.</p><p>Click a control to display its explanation here. Nothing in Guide mode can start or stop parade audio.</p></>}
               </aside>
             </div>
           </section>
@@ -2680,8 +2693,8 @@ export default function Home() {
            individual controls. This keeps Editor/Manager proportions identical
            to the live Parade Suite UI. */
         .guide-live-page {
-          zoom: .78;
-          width: 128.205%;
+          zoom: .56;
+          width: 178.572%;
           max-width: none !important;
           min-width: 0 !important;
           overflow: visible !important;
@@ -2740,15 +2753,15 @@ export default function Home() {
         .guide-interlude-special { margin-top: 22px !important; }
 
         @media (max-width: 1180px) {
-          .guide-live-page { zoom: .66; width:151.515%; }
+          .guide-live-page { zoom: .50; width:200%; }
         }
         @media (max-width: 760px) {
-          .guide-live-page { zoom: .43; width:232.558%; }
+          .guide-live-page { zoom: .28; width:357.143%; }
           .guidebook-layout { display:flex !important; flex-direction:column !important; overflow:auto !important; }
           .guide-explanation-panel { min-height:210px !important; }
         }
         @media (max-width: 430px) {
-          .guide-live-page { zoom: .34; width:294.118%; }
+          .guide-live-page { zoom: .23; width:434.783%; }
           .guidebook-modal { height:96dvh !important; }
         }
 
@@ -2767,6 +2780,9 @@ export default function Home() {
         }
         .guide-playlist-row .action-repeat { color: #22c55e !important; font-weight: 700; }
         .guide-playlist-row .action-end { color: #ef4444 !important; font-weight: 700; }
+        .guide-playlist-row .action-interlude, .guide-inline-action.action-interlude { color: #93c5fd !important; font-weight: 700; }
+        .guide-about-credit { margin-bottom:14px; color:#e2e8f0; line-height:1.5; }
+        .guide-about-version { margin-bottom:14px; color:#f8fafc; }
       `}</style>
 
     </main>
