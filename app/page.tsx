@@ -141,6 +141,7 @@ export default function Home() {
 
   const [tab, setTab] = useState<"editor" | "manager">("editor");
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [guidebookOpen, setGuidebookOpen] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [sequence, setSequence] = useState<SequenceItem[]>([]);
   const [search, setSearch] = useState("");
@@ -1679,6 +1680,7 @@ export default function Home() {
           <button onClick={() => paradeFileInput.current?.click()}>Open</button>
           <button onClick={saveParadeSequence}>Save</button>
           <button onClick={() => setAboutOpen(true)}>About</button>
+          <button onClick={() => setGuidebookOpen(true)}>Guidebook</button>
         </div>
 
         <div className="web-account-actions">
@@ -2267,6 +2269,113 @@ export default function Home() {
             </label>
           </div>
         </section>
+      )}
+
+
+      {guidebookOpen && (
+        <div className="modal-backdrop" onMouseDown={() => setGuidebookOpen(false)}>
+          <section
+            className="admin-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              width: "min(980px, calc(100vw - 24px))",
+              maxWidth: "980px",
+              maxHeight: "88dvh",
+              overflowY: "auto",
+            }}
+          >
+            <div className="panel-header" style={{ position: "sticky", top: 0, zIndex: 2, background: "#111827", paddingBottom: "12px" }}>
+              <div>
+                <h2>Parade Suite Guidebook</h2>
+                <div className="hint">Detailed guide to the controls and operator workflow</div>
+              </div>
+              <button className="button" onClick={() => setGuidebookOpen(false)}>Close</button>
+            </div>
+
+            <div style={{ lineHeight: 1.6, display: "grid", gap: "22px" }}>
+              <section>
+                <h3>1. Main Menu</h3>
+                <p><strong>New</strong> — Starts a new Parade Sequence. Use this when preparing a different parade programme. The current sequence is cleared so a new order of music can be built.</p>
+                <p><strong>Open</strong> — Opens a previously saved <code>.parade.json</code> Parade Sequence. Opening a sequence restores its track order and actions using tracks already available in the Music Library.</p>
+                <p><strong>Save</strong> — Saves the current Parade Sequence as a <code>.parade.json</code> file. Save after arranging the sequence so the same programme can be reopened later.</p>
+                <p><strong>About</strong> — Displays the Parade Suite version, purpose and developer information.</p>
+                <p><strong>Guidebook</strong> — Opens this guide.</p>
+                <p><strong>Admin</strong> — Available only to administrators. Opens the Admin Panel for managing Parade Suite user access.</p>
+                <p><strong>Log Out</strong> — Ends the current Parade Suite session and returns to the access screen.</p>
+              </section>
+
+              <section>
+                <h3>2. Editor / Manager Tabs</h3>
+                <p><strong>Editor</strong> — Used to prepare the Music Library and build the Parade Sequence before operating the parade.</p>
+                <p><strong>Manager</strong> — Used during parade operations. It provides playback, drum cues, ending controls, Interlude controls and the Now Playing display.</p>
+              </section>
+
+              <section>
+                <h3>3. Parade Editor — Music Library</h3>
+                <p><strong>+ Import Music</strong> — Adds one or more supported audio tracks to the Parade Suite Music Library.</p>
+                <p><strong>+ Import LIB</strong> — Imports a legacy <code>.lib</code> timing map and pairs it with the matching music track. Timing maps are required for beat-synchronised ceremonial cues and endings.</p>
+                <p><strong>Search music track…</strong> — Filters the visible Music Library by track name.</p>
+                <p><strong>Category</strong> — Filters the library by categories such as Salutes, Fast March, Slow March, Inspection Tunes, Drum Solo, Bugle Calls, Fanfares, Interlude Music and Others.</p>
+                <p><strong>Timing-map indicator</strong> — A loaded timing-map indicator confirms that Parade Suite has timing information for that track. A missing indicator means beat-synchronised functions may not be available for it.</p>
+                <p><strong>Delete</strong> — Admin only. Permanently removes the selected Music Library record. Normal users do not see this button.</p>
+                <p><strong>Add to Parade →</strong> — Adds the selected Music Library track to the end of the Parade Sequence.</p>
+              </section>
+
+              <section>
+                <h3>4. Parade Editor — Parade Sequence</h3>
+                <p><strong>Drag handle / row drag</strong> — Press and drag a sequence row to change its order. On phone and iPad, use the drag handle beside the sequence number.</p>
+                <p><strong>Action — Repeat</strong> — The track is intended to repeat according to its Parade Suite repeat behaviour. Repeat is shown in green.</p>
+                <p><strong>Action — End</strong> — The track is treated as an ending track. When it finishes naturally, Parade Suite selects the next sequence item but does not automatically play it. End is shown in red.</p>
+                <p><strong>Action — Interlude</strong> — Used for Interlude Music. It routes the selected Interlude through the independent Interlude channel instead of the main ceremonial-music channel.</p>
+                <p><strong>Remove</strong> — Removes only the selected row from the Parade Sequence. It does not delete the music from the Music Library.</p>
+                <p><strong>Clear</strong> — Removes every row from the Parade Sequence so the programme can be rebuilt.</p>
+                <p><strong>▶ Preview</strong> — Previews the selected Music Library track without operating the main parade sequence.</p>
+                <p><strong>■ Stop</strong> — Stops the current preview.</p>
+              </section>
+
+              <section>
+                <h3>5. Parade Manager — Main Playback</h3>
+                <p><strong>▶ Play</strong> — Starts the currently selected parade track. When an Interlude row is selected, Parade Suite prepares the independent Interlude channel rather than treating it as normal parade music.</p>
+                <p><strong>■ Stop</strong> — Stops the currently selected main parade track immediately.</p>
+                <p><strong>Previous / Next selection controls</strong> — Where shown, these move the selected sequence position so the operator can prepare another track.</p>
+                <p><strong>Music Volume</strong> — Sets the normal playback level of the main parade-music channel.</p>
+              </section>
+
+              <section>
+                <h3>6. Drum Cues</h3>
+                <p><strong>Single Beat</strong> — Schedules one original single drum cue against the current track's timing map when available. If no timing map is available, the cue is played immediately.</p>
+                <p><strong>Double Beat</strong> — Schedules one original double-beat cue using the same beat-synchronised system.</p>
+                <p><strong>2× Double Beat</strong> — Schedules two double-beat cues in sequence. This is useful for ceremonial commands that require the established two-double-beat pattern.</p>
+                <p><strong>Cue Volume</strong> — Controls the audible level of the drum-cue WAV files. It does not change the main music volume.</p>
+                <p>While drum cues are played, Parade Suite temporarily ducks the march so the cue remains distinct. This is volume ducking only; no bass boost or EQ is applied to the cue files.</p>
+              </section>
+
+              <section>
+                <h3>7. Ending / Action Controls</h3>
+                <p><strong>End Song</strong> — Requests the ceremonial ending for the current track. Parade Suite uses the timing map to place the ending on the correct musical position, plays the established ending cue, stops the current track and selects the next sequence item without automatically starting it.</p>
+                <p><strong>Next Song</strong> — Uses the same beat-synchronised ending process as End Song, then automatically starts the next parade track.</p>
+                <p><strong>Fade</strong> — Smoothly fades the main parade music to silence and stops it. Fade does not add an ending drum sequence.</p>
+                <p><strong>Restore Interlude</strong> — Restores the Interlude channel to its configured/default operating state when that control is available.</p>
+              </section>
+
+              <section>
+                <h3>8. Interlude Music</h3>
+                <p><strong>Play / Loop</strong> — Starts the Interlude track loaded from the selected Interlude row and loops it continuously until Stop is used.</p>
+                <p><strong>Stop</strong> — Fades the Interlude smoothly to silence before stopping. When the fade completes, Parade Suite prepares the next sequence item without automatically playing it.</p>
+                <p><strong>Interlude Volume</strong> — Adjusts the independent Interlude playback level while it is playing.</p>
+                <p><strong>Default %</strong> — Sets the starting volume used the next time Interlude Play / Loop is pressed.</p>
+                <p><strong>Fade %</strong> — Sets the Interlude fade target/behaviour where provided by the current build.</p>
+              </section>
+
+              <section>
+                <h3>9. Recommended Parade Workflow</h3>
+                <p><strong>Before the parade:</strong> Import music → import/confirm timing maps → add tracks to Parade Sequence → arrange the order → choose Repeat / End actions → Save the sequence.</p>
+                <p><strong>During the parade:</strong> Open the saved sequence → switch to Manager → confirm the selected track → Play → use drum cues only when required → use End Song or Next Song for beat-synchronised ceremonial endings → use Interlude Play / Loop for background-transition music.</p>
+                <p><strong>Important:</strong> End Song, Next Song and beat-synchronised manual cues rely on the timing map. Always confirm the correct track and sequence position before operating a ceremonial cue.</p>
+              </section>
+            </div>
+          </section>
+        </div>
       )}
 
       {aboutOpen && (
