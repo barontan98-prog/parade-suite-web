@@ -1818,9 +1818,11 @@ export default function Home() {
               </div>
 
               <div className="windows-library-buttons">
-                <button onClick={() => void deleteSelectedLibraryTrack()}>
-                  Delete
-                </button>
+                {accessUser.role === "admin" && (
+                  <button onClick={() => void deleteSelectedLibraryTrack()}>
+                    Delete
+                  </button>
+                )}
                 <button onClick={() => void addSelectedLibraryTrack()}>
                   Add to Parade →
                 </button>
