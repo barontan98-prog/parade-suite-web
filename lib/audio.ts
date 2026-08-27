@@ -582,6 +582,25 @@ export class AudioEngine {
     return !this.preview.paused && !this.preview.ended;
   }
 
+  getPreviewPositionMs(): number {
+    return Number.isFinite(this.preview.currentTime)
+      ? Math.max(0, Math.round(this.preview.currentTime * 1000))
+      : 0;
+  }
+
+  getPreviewDurationMs(): number {
+    return Number.isFinite(this.preview.duration)
+      ? Math.max(0, Math.round(this.preview.duration * 1000))
+      : 0;
+  }
+
+  seekPreview(positionMs: number) {
+    if (!Number.isFinite(positionMs)) return;
+    const durationMs = this.getPreviewDurationMs();
+    const targetMs = Math.max(0, durationMs > 0 ? Math.min(positionMs, durationMs) : positionMs);
+    try { this.preview.currentTime = targetMs / 1000; } catch {}
+  }
+
   private async ensureInterludeAudioGraph(): Promise<void> {
     const AudioContextCtor =
       window.AudioContext ||
