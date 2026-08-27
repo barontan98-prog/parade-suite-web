@@ -2342,10 +2342,36 @@ export default function Home() {
                         <label>Music Library</label>
                         <input className="windows-input guide-clickable" value="Search music track…" readOnly onClick={() => setGuideTopic({title:"Search",functionText:"Filters the visible Music Library by track name.",whenText:"Use to find a track quickly.",notes:"Search works together with the Category filter."})}/>
                         <select className="windows-input guide-clickable" value="All Categories" onChange={() => {}} onClick={() => setGuideTopic({title:"Category Filter",functionText:"Filters tracks by category.",whenText:"Use to narrow the library to a specific music type.",notes:"All Categories shows the entire library."})}><option>All Categories</option></select>
-                        <div className="windows-library-list">
-                          <div className="windows-library-row selected">✓ New Knights of St John</div>
-                          <div className="windows-library-row">✓ Advance in Review Order (Drum Beat)</div>
-                          <div className="windows-library-row">✓ Corp of Drum Solo</div>
+                        <div
+                          className="windows-library-list guide-library-list"
+                          onClick={() => setGuideTopic({
+                            title:"Music Library",
+                            functionText:"Shows the parade and ceremonial music available to add to the Parade Sequence.",
+                            whenText:"Use the Search and Category controls to locate the required track, then select it before adding it to the parade.",
+                            notes:"The timing icon shows whether timing data is available. Track title and category are displayed exactly as in the live Music Library."
+                          })}
+                        >
+                          <button type="button" className="windows-library-item selected guide-library-item">
+                            <span className="timing-icon">✅</span>
+                            <span className="windows-library-copy">
+                              <strong>Guard of Honour March</strong>
+                              <small>Fast March</small>
+                            </span>
+                          </button>
+                          <button type="button" className="windows-library-item guide-library-item">
+                            <span className="timing-icon">✅</span>
+                            <span className="windows-library-copy">
+                              <strong>Advance in Review Order</strong>
+                              <small>Salutes</small>
+                            </span>
+                          </button>
+                          <button type="button" className="windows-library-item guide-library-item">
+                            <span className="timing-icon">✅</span>
+                            <span className="windows-library-copy">
+                              <strong>Interlude - Viva La Vida</strong>
+                              <small>Interlude Music</small>
+                            </span>
+                          </button>
                         </div>
                         <div className="windows-library-buttons">
                           <button className="guide-clickable" onClick={() => setGuideTopic({title:"Add to Parade →",functionText:"Adds the selected Music Library track to the Parade Sequence.",whenText:"Use while assembling the programme.",notes:"The original Music Library track remains unchanged."})}>Add to Parade →</button>
@@ -2357,9 +2383,9 @@ export default function Home() {
                         <div className="windows-sequence-table">
                           <div className="windows-sequence-header"><span>#</span><span>Track</span><span>Action</span><span>Category</span></div>
                           <div className="windows-sequence-body">
-                            <div className="windows-sequence-row selected"><span className="guide-clickable" onClick={() => setGuideTopic({title:"Sequence Row / Drag Handle",functionText:"Selects and reorders a Parade Sequence item.",whenText:"Drag when changing the programme order.",notes:"On touch devices use the ≡ handle and number area."})}>≡  1</span><strong>Guard of Honour March</strong><button className="guide-inline-action action-repeat" onClick={() => setGuideTopic({title:"Repeat",functionText:"Sets this sequence item to repeat using the track's configured Parade Suite repeat behaviour instead of ending naturally.",whenText:"Use for music that must continue or loop until the operator deliberately ends or changes it.",notes:"Repeat is a Parade Sequence action, not a live playback button. It is shown in green."})}>Repeat</button><span>Fast March</span></div>
-                            <div className="windows-sequence-row"><span>≡  2</span><strong>Advance in Review Order</strong><button className="guide-inline-action action-end" onClick={() => setGuideTopic({title:"End",functionText:"Sets this sequence item as an ending track. When it reaches its natural end, Parade Suite stops it and selects the next sequence item without automatically playing the next track.",whenText:"Use when the music should finish once and the operator must decide when the next item starts.",notes:"End is a Parade Sequence action and is shown in red. It is different from the live End Song button."})}>End</button><span>Salutes</span></div>
-                            <div className="windows-sequence-row"><span>≡  3</span><strong>Interlude - Viva La Vida</strong><button className="guide-inline-action action-interlude" onClick={() => setGuideTopic({title:"Interlude",functionText:"Routes this sequence item through the independent Interlude Music channel.",whenText:"Use for transition or background music that should be controlled from the Interlude Music panel.",notes:"Interlude is shown in light blue and uses its own Play / Loop, Stop, volume and fade controls."})}>Interlude</button><span>Interlude Music</span></div>
+                            <div className="windows-sequence-row selected"><span className="guide-clickable" onClick={() => setGuideTopic({title:"Sequence Row / Drag Handle",functionText:"Selects and reorders a Parade Sequence item.",whenText:"Drag when changing the programme order.",notes:"On touch devices use the ≡ handle and number area."})}>≡  1</span><strong>Guard of Honour March</strong><button className="guide-inline-action action-repeat" style={{ color: "#22c55e", borderColor: "#22c55e" }} onClick={() => setGuideTopic({title:"Repeat",functionText:"Sets this sequence item to repeat using the track's configured Parade Suite repeat behaviour instead of ending naturally.",whenText:"Use for music that must continue or loop until the operator deliberately ends or changes it.",notes:"Repeat is a Parade Sequence action, not a live playback button. It is shown in green."})}>Repeat</button><span>Fast March</span></div>
+                            <div className="windows-sequence-row"><span>≡  2</span><strong>Advance in Review Order</strong><button className="guide-inline-action action-end" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => setGuideTopic({title:"End",functionText:"Sets this sequence item as an ending track. When it reaches its natural end, Parade Suite stops it and selects the next sequence item without automatically playing the next track.",whenText:"Use when the music should finish once and the operator must decide when the next item starts.",notes:"End is a Parade Sequence action and is shown in red. It is different from the live End Song button."})}>End</button><span>Salutes</span></div>
+                            <div className="windows-sequence-row"><span>≡  3</span><strong>Interlude - Viva La Vida</strong><button className="guide-inline-action action-interlude" style={{ color: "#93c5fd", borderColor: "#93c5fd" }} onClick={() => setGuideTopic({title:"Interlude",functionText:"Routes this sequence item through the independent Interlude Music channel.",whenText:"Use for transition or background music that should be controlled from the Interlude Music panel.",notes:"Interlude is shown in light blue and uses its own Play / Loop, Stop, volume and fade controls."})}>Interlude</button><span>Interlude Music</span></div>
                           </div>
                         </div>
                         <div className="windows-sequence-controls">
@@ -2374,7 +2400,7 @@ export default function Home() {
                       <button className="guide-clickable" onClick={() => setGuideTopic({title:"▶ Preview",functionText:"Plays the selected Music Library track for checking.",whenText:"Use while preparing the programme.",notes:"The Preview progress bar now follows preview playback and can be scrubbed."})}>▶ Preview</button>
                       <button className="guide-clickable" onClick={() => setGuideTopic({title:"■ Stop Preview",functionText:"Stops Preview playback.",whenText:"Use after checking a track.",notes:"This control belongs to the Editor preview strip."})}>■ Stop</button>
                       <input type="range" min="0" max="100" value="34" readOnly />
-                      <span>New Knights of St John</span>
+                      <span>Guard of Honour March</span>
                     </fieldset>
                   </section>
                 )}
@@ -2428,6 +2454,18 @@ export default function Home() {
                     type="button"
                     aria-label="Close explanation"
                     onClick={() => setGuideTopic(null)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      boxShadow: "none",
+                      padding: 0,
+                      width: "auto",
+                      minWidth: 0,
+                      height: "auto",
+                      minHeight: 0,
+                      color: "#f8fafc",
+                      borderRadius: 0,
+                    }}
                   >
                     ×
                   </button>
@@ -2955,6 +2993,27 @@ export default function Home() {
         .guide-playlist-row .action-interlude, .guide-inline-action.action-interlude { color: #93c5fd !important; font-weight: 700; }
         .guide-about-credit { margin-bottom:14px; color:#e2e8f0; line-height:1.5; }
         .guide-about-version { margin-bottom:14px; color:#f8fafc; }
+
+        .guide-inline-action.action-repeat { color:#22c55e !important; border-color:#22c55e !important; }
+        .guide-inline-action.action-end { color:#ef4444 !important; border-color:#ef4444 !important; }
+        .guide-inline-action.action-interlude { color:#93c5fd !important; border-color:#93c5fd !important; }
+        .guide-library-list { cursor:pointer; }
+        .guide-library-item { pointer-events:none; }
+        .guide-explanation-close,
+        .guide-explanation-close:hover,
+        .guide-explanation-close:focus,
+        .guide-explanation-close:active {
+          background:transparent !important;
+          border:0 !important;
+          box-shadow:none !important;
+          outline:none !important;
+          padding:0 !important;
+          width:auto !important;
+          min-width:0 !important;
+          height:auto !important;
+          min-height:0 !important;
+          border-radius:0 !important;
+        }
       `}</style>
 
     </main>
