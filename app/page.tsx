@@ -3099,8 +3099,8 @@ export default function Home() {
             overflow: visible !important;
           }
           .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box,
           .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-now-playing,
           .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
             width: 100% !important;
@@ -3121,14 +3121,14 @@ export default function Home() {
             overflow: visible !important;
             text-overflow: clip !important;
           }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues {
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box {
             display: grid !important;
             grid-template-columns: 1fr !important;
             gap: 8px !important;
           }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions button,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues button {
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box button,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box button {
             width: 100% !important;
             min-height: 46px !important;
           }
@@ -3142,6 +3142,128 @@ export default function Home() {
             display: grid !important;
             grid-template-columns: 1fr !important;
             gap: 8px !important;
+          }
+
+          /* Phone Manager: true one-column guide layout. */
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-title {
+            width: 100% !important;
+            text-align: center !important;
+            margin: 4px 0 12px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-body {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-left {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            width: 100% !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-top {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            width: 100% !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist-box,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-now-playing,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist-box {
+            min-height: 170px !important;
+            padding: 10px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .guide-playlist-row {
+            padding: 8px 10px !important;
+            font-size: 14px !important;
+            line-height: 1.35 !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box {
+            padding: 10px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box button,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box button {
+            display: block !important;
+            width: 100% !important;
+            min-height: 48px !important;
+            margin: 0 0 8px !important;
+            white-space: normal !important;
+            font-size: 15px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box button:last-child,
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box button:last-child {
+            margin-bottom: 0 !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-now-playing {
+            min-height: 150px !important;
+            padding: 18px 12px !important;
+            text-align: center !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
+            order: 4 !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column fieldset {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 14px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .default-box {
+            display: grid !important;
+            grid-template-columns: 1fr 90px !important;
+            align-items: center !important;
+            gap: 10px !important;
+            width: 100% !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-progress {
+            display: grid !important;
+            grid-template-columns: auto 1fr auto !important;
+            gap: 8px !important;
+            align-items: center !important;
+            width: 100% !important;
+            margin-top: 12px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-progress input {
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-transport {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+            width: 100% !important;
+            margin-top: 10px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-transport button {
+            width: 100% !important;
+            min-height: 48px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row {
+            width: 100% !important;
+            margin-top: 10px !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row label {
+            display: grid !important;
+            grid-template-columns: auto 1fr !important;
+            gap: 10px !important;
+            align-items: center !important;
+            width: 100% !important;
+          }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row input {
+            min-width: 0 !important;
+            width: 100% !important;
           }
 
           /* Standalone Interlude guide: one centred card, no desktop side-by-side squeeze. */
