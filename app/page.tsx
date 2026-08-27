@@ -2383,11 +2383,25 @@ export default function Home() {
                     <div className="windows-manager-body">
                       <div className="windows-manager-left">
                         <div className="windows-manager-top">
-                          <fieldset className="windows-playlist-box"><legend>Playlist</legend><button className="guide-clickable guide-list-button" onClick={() => setGuideTopic({title:"Playlist Selection",functionText:"Selects the Parade Sequence item to prepare or operate.",whenText:"Select the required item before Play or cue operations.",notes:"Always confirm the highlighted row and Now Playing title."})}>01. New Knights of St John [Repeat]</button><div>02. Advance in Review Order [End]</div><div>03. Corp of Drum Solo [End]</div></fieldset>
+                          <fieldset
+                            className="windows-playlist-box guide-clickable guide-playlist-box"
+                            onClick={() => setGuideTopic({title:"Playlist",functionText:"Shows the Parade Sequence in operating order and lets the operator select the item to prepare or operate.",whenText:"Use the Playlist to confirm and select the required sequence item before playback or cue operations.",notes:"The highlighted row is the selected item. Repeat is shown in green, End in red, and Interlude uses its Interlude colour."})}
+                          >
+                            <legend>Playlist</legend>
+                            <div className="guide-playlist-row selected">
+                              <span>01. Guard of Honour March </span><span className="action-repeat">[Repeat]</span>
+                            </div>
+                            <div className="guide-playlist-row">
+                              <span>02. Advance in Review Order </span><span className="action-end">[End]</span>
+                            </div>
+                            <div className="guide-playlist-row">
+                              <span>03. Interlude - Viva La Vida </span><span className="action-interlude">[Interlude]</span>
+                            </div>
+                          </fieldset>
                           <fieldset className="windows-actions-box"><legend>Actions</legend><button className="guide-clickable" onClick={() => setGuideTopic({title:"Next Song",functionText:"Performs the beat-synchronised ending and automatically starts the next track.",whenText:"Use for an immediate musical transition.",notes:"A valid timing map is required."})}>Next Song</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"End Song",functionText:"Performs the beat-synchronised ending and selects the next track without starting it.",whenText:"Use when the next item must wait for a manual Play command.",notes:"For normal parade music, a valid timing map is required. Interlude Music uses a different End Song behaviour, explained in the Interlude Music tab."})}>End Song</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Fade",functionText:"Fades the main parade music smoothly to silence and stops it.",whenText:"Use when a gradual stop is required.",notes:"Fade does not play an ending drum sequence."})}>Fade</button></fieldset>
                           <fieldset className="windows-cues-box"><legend>Drum Cues</legend><button className="guide-clickable" onClick={() => setGuideTopic({title:"Single Beat",functionText:"Plays one original single drum cue.",whenText:"Use for ceremonial commands requiring a single beat.",notes:"The cue is beat-synchronised when timing data is available; music ducks underneath it."})}>Single Beat</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Double Beat",functionText:"Plays the original double-beat cue.",whenText:"Use for commands requiring a double beat.",notes:"No bass boost or EQ processing is applied."})}>Double Beat</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"2× Double Beat",functionText:"Plays the established two-double-beat pattern.",whenText:"Use where two consecutive double beats are required.",notes:"Timing follows the established Parade Suite cue behaviour."})}>2× Double Beat</button></fieldset>
                         </div>
-                        <fieldset className="windows-now-playing"><legend>Now Playing</legend><div className="guide-now-title">New Knights of St John</div><div className="action-repeat">Repeat</div><div>Next: Advance in Review Order</div></fieldset>
+                        <fieldset className="windows-now-playing"><legend>Now Playing</legend><div className="guide-now-title">Guard of Honour March</div><div className="action-repeat">Repeat</div><div>Next: Advance in Review Order</div></fieldset>
                       </div>
                       <aside className="windows-interlude-column"><fieldset><legend>Interlude Music</legend><div className="interlude-playing-text">No Interlude Selected</div><label className="default-box"><strong>Default %</strong><input type="number" value="60" readOnly /></label><label className="default-box"><strong>Fade %</strong><input type="number" value="10" readOnly /></label><h3>Interlude Volume</h3><input className="volume-slider" type="range" value="60" readOnly /></fieldset></aside>
                     </div>
@@ -2563,7 +2577,8 @@ export default function Home() {
         .guidebook-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px; }
         .guidebook-tabs button { padding:9px 14px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#e5e7eb; font-weight:700; }
         .guidebook-tabs button.selected { background:#2563eb; border-color:#60a5fa; color:#fff; }
-        .guidebook-layout { min-height:0; flex:1; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; }
+        .guidebook-layout { min-height:0; flex:1; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; overflow:hidden; }
+        .guide-live-frame { min-width:0; width:100%; max-width:100%; min-height:0; overflow:hidden; position:relative; border:1px solid #334155; border-radius:12px; background:#0b1220; }
         .guide-snapshot-frame { min-width:0; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#0b1220; padding:12px; }
         .guide-snapshot-caption { color:#94a3b8; font-size:12px; margin-bottom:9px; }
         .guide-snapshot { min-width:700px; border:1px solid #475569; border-radius:10px; background:#111827; padding:14px; color:#f8fafc; box-shadow:0 12px 30px rgba(0,0,0,.28); }
@@ -2585,7 +2600,7 @@ export default function Home() {
         .guide-now-playing small { font-size:14px; color:#cbd5e1; }
         .guide-interlude-card { max-width:520px; margin:0 auto; }
         .guide-interlude-track { padding:12px; text-align:center; background:#172033; border-radius:6px; font-weight:800; }
-        .guide-explanation-panel { min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#111827; padding:18px; }
+        .guide-explanation-panel { min-width:0; width:100%; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#111827; padding:18px; position:relative; z-index:2; }
         .guide-explanation-panel h3 { margin:4px 0 18px; font-size:24px; }
         .guide-explanation-panel h4 { margin:16px 0 5px; color:#93c5fd; }
         .guide-explanation-panel p { margin:0; line-height:1.55; color:#e2e8f0; }
@@ -2593,6 +2608,7 @@ export default function Home() {
         @media (max-width: 820px) {
           .guidebook-modal { height:92dvh; }
           .guidebook-layout { grid-template-columns:1fr; overflow:auto; }
+          .guide-live-frame { overflow:hidden; }
           .guide-snapshot-frame { min-height:430px; }
           .guide-explanation-panel { min-height:260px; }
         }
@@ -2735,6 +2751,22 @@ export default function Home() {
           .guide-live-page { zoom: .34; width:294.118%; }
           .guidebook-modal { height:96dvh !important; }
         }
+
+        .guide-playlist-box { cursor: pointer; }
+        .guide-playlist-box:hover { border-color: #60a5fa !important; }
+        .guide-playlist-row {
+          display: block;
+          padding: 4px 8px;
+          border-radius: 5px;
+          line-height: 1.35;
+        }
+        .guide-playlist-row.selected {
+          background: #2563eb;
+          color: #fff;
+          font-weight: 700;
+        }
+        .guide-playlist-row .action-repeat { color: #22c55e !important; font-weight: 700; }
+        .guide-playlist-row .action-end { color: #ef4444 !important; font-weight: 700; }
       `}</style>
 
     </main>
