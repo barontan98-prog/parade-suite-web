@@ -140,6 +140,7 @@ export default function Home() {
   const libFileInput = useRef<HTMLInputElement | null>(null);
 
   const [tab, setTab] = useState<"editor" | "manager">("editor");
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [sequence, setSequence] = useState<SequenceItem[]>([]);
   const [search, setSearch] = useState("");
@@ -1677,6 +1678,7 @@ export default function Home() {
           <button onClick={() => void newParade()}>New</button>
           <button onClick={() => paradeFileInput.current?.click()}>Open</button>
           <button onClick={saveParadeSequence}>Save</button>
+          <button onClick={() => setAboutOpen(true)}>About</button>
         </div>
 
         <div className="web-account-actions">
@@ -2263,6 +2265,40 @@ export default function Home() {
             </label>
           </div>
         </section>
+      )}
+
+      {aboutOpen && (
+        <div className="modal-backdrop" onMouseDown={() => setAboutOpen(false)}>
+          <section
+            className="admin-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{ maxWidth: "520px" }}
+          >
+            <div className="panel-header">
+              <div>
+                <h2>About Parade Suite</h2>
+              </div>
+              <button className="button" onClick={() => setAboutOpen(false)}>
+                Close
+              </button>
+            </div>
+
+            <div style={{ lineHeight: 1.55 }}>
+              <h2 style={{ marginBottom: "4px" }}>Parade Suite</h2>
+              <div style={{ marginBottom: "14px" }}>
+                Parade and Ceremonial Music Management System
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <strong>Version 1, © 2026</strong>
+              </div>
+              <div style={{ marginBottom: "14px" }}>Built by Tan Zhong Jun Baron</div>
+              <div>
+                Designed for the preparation and management of parade music,
+                ceremonial cues, drum cues and timing maps.
+              </div>
+            </div>
+          </section>
+        </div>
       )}
 
       {adminOpen && accessUser.role === "admin" && (
