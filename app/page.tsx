@@ -2742,8 +2742,8 @@ export default function Home() {
            changing its internal live-UI geometry. Lower zoom values shrink the
            UI as a single unit while the compensated width preserves proportions. */
         .guide-live-page.windows-editor {
-          zoom: .70;
-          width: 142.858%;
+          zoom: .84;
+          width: 119.048%;
         }
         .guide-live-page.windows-manager:not(.guide-interlude-page) {
           zoom: .60;
@@ -2767,13 +2767,34 @@ export default function Home() {
         .guide-live-page.windows-editor,
         .guide-live-page.windows-manager {
           height: auto !important;
-          min-height: 720px !important;
+          min-height: 0 !important;
           max-height: none !important;
         }
-        .guide-live-page .windows-editor-main {
-          grid-template-columns: minmax(320px, .92fr) minmax(650px, 1.65fr) !important;
-          gap: 18px !important;
+        .guide-live-page.windows-editor {
+          padding: 10px 12px 8px !important;
+        }
+        .guide-live-page.windows-editor .windows-editor-main {
+          grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr) !important;
+          gap: 10px !important;
           overflow: visible !important;
+        }
+        .guide-live-page.windows-editor .windows-library-pane,
+        .guide-live-page.windows-editor .windows-sequence-pane {
+          min-width: 0 !important;
+        }
+        .guide-live-page.windows-editor .windows-library-list,
+        .guide-live-page.windows-editor .windows-sequence-table {
+          min-height: 300px !important;
+          max-height: 360px !important;
+        }
+        .guide-live-page.windows-editor .windows-library-buttons,
+        .guide-live-page.windows-editor .windows-sequence-controls {
+          gap: 8px !important;
+        }
+        .guide-live-page.windows-editor .windows-preview {
+          margin-top: 6px !important;
+          min-height: 64px !important;
+          padding: 7px 8px !important;
         }
         .guide-live-page .windows-manager-body {
           grid-template-columns: minmax(0, 1fr) 390px !important;
@@ -2789,11 +2810,14 @@ export default function Home() {
         .guide-live-page .windows-playlist {
           overflow: hidden !important;
         }
-        .guide-live-page .windows-sequence-row,
-        .guide-live-page .windows-sequence-header {
-          grid-template-columns: 76px minmax(330px, 1fr) 185px 180px !important;
-          column-gap: 12px !important;
+        .guide-live-page.windows-editor .windows-sequence-row,
+        .guide-live-page.windows-editor .windows-sequence-header {
+          grid-template-columns: 52px minmax(210px, 1fr) 118px 112px !important;
+          column-gap: 8px !important;
           align-items: center !important;
+        }
+        .guide-live-page.windows-editor .windows-sequence-row {
+          min-height: 36px !important;
         }
         .guide-live-page .windows-sequence-row strong,
         .guide-live-page .windows-playlist button span {
@@ -2830,20 +2854,20 @@ export default function Home() {
           max-width: 100% !important;
         }
         @media (max-width: 1180px) {
-          .guide-live-page.windows-editor { zoom:.58; width:172.414%; }
+          .guide-live-page.windows-editor { zoom:.72; width:138.889%; }
           .guide-live-page.windows-manager:not(.guide-interlude-page) { zoom:.50; width:200%; }
           .guide-live-page.guide-interlude-page { zoom:.68; width:147.059%; }
           .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; }
         }
         @media (max-width: 760px) {
-          .guide-live-page.windows-editor { zoom:.34; width:294.118%; }
+          .guide-live-page.windows-editor { zoom:.48; width:208.334%; }
           .guide-live-page.windows-manager:not(.guide-interlude-page) { zoom:.29; width:344.828%; }
           .guide-live-page.guide-interlude-page { zoom:.45; width:222.223%; }
           .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; padding: 12px; }
           .guidebook-layout { display:block !important; overflow:hidden !important; }
         }
         @media (max-width: 430px) {
-          .guide-live-page.windows-editor { zoom:.27; width:370.371%; }
+          .guide-live-page.windows-editor { zoom:.38; width:263.158%; }
           .guide-live-page.windows-manager:not(.guide-interlude-page) { zoom:.23; width:434.783%; }
           .guide-live-page.guide-interlude-page { zoom:.38; width:263.158%; }
           .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; padding: 10px; }
