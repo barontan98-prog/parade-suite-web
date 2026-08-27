@@ -2440,46 +2440,7 @@ export default function Home() {
               </aside>
             </div>
 
-            <style jsx global>{`
-              .guidebook-modal { width:min(1180px,calc(100vw - 20px)); max-width:1180px; height:min(88dvh,860px); overflow:hidden; display:flex; flex-direction:column; }
-              .guidebook-header { flex:0 0 auto; }
-              .guidebook-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px; }
-              .guidebook-tabs button { padding:9px 14px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#e5e7eb; font-weight:700; }
-              .guidebook-tabs button.selected { background:#2563eb; border-color:#60a5fa; color:#fff; }
-              .guidebook-layout { min-height:0; flex:1; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; }
-              .guide-snapshot-frame { min-width:0; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#0b1220; padding:12px; }
-              .guide-snapshot-caption { color:#94a3b8; font-size:12px; margin-bottom:9px; }
-              .guide-snapshot { min-width:700px; border:1px solid #475569; border-radius:10px; background:#111827; padding:14px; color:#f8fafc; box-shadow:0 12px 30px rgba(0,0,0,.28); }
-              .guide-hotspot { border:2px solid #facc15 !important; background:#1f2937 !important; color:#fff !important; border-radius:7px; padding:8px 10px; font-weight:700; cursor:pointer; box-shadow:0 0 0 2px rgba(250,204,21,.08); }
-              .guide-hotspot:hover { background:#374151 !important; box-shadow:0 0 0 3px rgba(250,204,21,.18); }
-              .guide-hotspot.green { border-color:#22c55e !important; }
-              .guide-hotspot.red { border-color:#ef4444 !important; }
-              .guide-wide { width:100%; text-align:left; }
-              .guide-toolbar-row,.guide-toolbar-tabs,.guide-editor-imports,.guide-preview-row,.guide-transport-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-              .guide-toolbar-app,.guide-shot-title { font-size:22px; font-weight:900; letter-spacing:.04em; margin:22px 0 12px; }
-              .guide-toolbar-tabs { border-top:1px solid #334155; padding-top:12px; }
-              .guide-editor-grid,.guide-manager-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-              .guide-manager-grid { grid-template-columns:1.2fr .8fr .8fr; }
-              .guide-panel,.guide-interlude-card { border:1px solid #475569; border-radius:8px; padding:12px; display:grid; gap:8px; background:#0f172a; }
-              .guide-list-row { padding:8px 10px; border-radius:6px; background:#172033; color:#cbd5e1; }
-              .guide-preview-row { margin-top:12px; border:1px solid #475569; border-radius:8px; padding:10px; }
-              .guide-now-playing { margin:12px 0; text-align:center; padding:18px; border:1px solid #475569; border-radius:8px; background:#0f172a; font-size:22px; font-weight:800; }
-              .guide-now-playing span { color:#22c55e; }
-              .guide-now-playing small { font-size:14px; color:#cbd5e1; }
-              .guide-interlude-card { max-width:520px; margin:0 auto; }
-              .guide-interlude-track { padding:12px; text-align:center; background:#172033; border-radius:6px; font-weight:800; }
-              .guide-explanation-panel { min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#111827; padding:18px; }
-              .guide-explanation-panel h3 { margin:4px 0 18px; font-size:24px; }
-              .guide-explanation-panel h4 { margin:16px 0 5px; color:#93c5fd; }
-              .guide-explanation-panel p { margin:0; line-height:1.55; color:#e2e8f0; }
-              .guide-explanation-label { color:#facc15; text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:800; }
-              @media (max-width: 820px) {
-                .guidebook-modal { height:92dvh; }
-                .guidebook-layout { grid-template-columns:1fr; overflow:auto; }
-                .guide-snapshot-frame { min-height:430px; }
-                .guide-explanation-panel { min-height:260px; }
-              }
-            `}</style>
+
           </section>
         </div>
       )}
@@ -2628,6 +2589,47 @@ export default function Home() {
       )}
 
       <style jsx global>{`
+
+        .guidebook-modal { width:min(1180px,calc(100vw - 20px)); max-width:1180px; height:min(88dvh,860px); overflow:hidden; display:flex; flex-direction:column; }
+        .guidebook-header { flex:0 0 auto; }
+        .guidebook-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px; }
+        .guidebook-tabs button { padding:9px 14px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#e5e7eb; font-weight:700; }
+        .guidebook-tabs button.selected { background:#2563eb; border-color:#60a5fa; color:#fff; }
+        .guidebook-layout { min-height:0; flex:1; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; }
+        .guide-snapshot-frame { min-width:0; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#0b1220; padding:12px; }
+        .guide-snapshot-caption { color:#94a3b8; font-size:12px; margin-bottom:9px; }
+        .guide-snapshot { min-width:700px; border:1px solid #475569; border-radius:10px; background:#111827; padding:14px; color:#f8fafc; box-shadow:0 12px 30px rgba(0,0,0,.28); }
+        .guide-hotspot { border:2px solid #facc15 !important; background:#1f2937 !important; color:#fff !important; border-radius:7px; padding:8px 10px; font-weight:700; cursor:pointer; box-shadow:0 0 0 2px rgba(250,204,21,.08); }
+        .guide-hotspot:hover { background:#374151 !important; box-shadow:0 0 0 3px rgba(250,204,21,.18); }
+        .guide-hotspot.green { border-color:#22c55e !important; }
+        .guide-hotspot.red { border-color:#ef4444 !important; }
+        .guide-wide { width:100%; text-align:left; }
+        .guide-toolbar-row,.guide-toolbar-tabs,.guide-editor-imports,.guide-preview-row,.guide-transport-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .guide-toolbar-app,.guide-shot-title { font-size:22px; font-weight:900; letter-spacing:.04em; margin:22px 0 12px; }
+        .guide-toolbar-tabs { border-top:1px solid #334155; padding-top:12px; }
+        .guide-editor-grid,.guide-manager-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .guide-manager-grid { grid-template-columns:1.2fr .8fr .8fr; }
+        .guide-panel,.guide-interlude-card { border:1px solid #475569; border-radius:8px; padding:12px; display:grid; gap:8px; background:#0f172a; }
+        .guide-list-row { padding:8px 10px; border-radius:6px; background:#172033; color:#cbd5e1; }
+        .guide-preview-row { margin-top:12px; border:1px solid #475569; border-radius:8px; padding:10px; }
+        .guide-now-playing { margin:12px 0; text-align:center; padding:18px; border:1px solid #475569; border-radius:8px; background:#0f172a; font-size:22px; font-weight:800; }
+        .guide-now-playing span { color:#22c55e; }
+        .guide-now-playing small { font-size:14px; color:#cbd5e1; }
+        .guide-interlude-card { max-width:520px; margin:0 auto; }
+        .guide-interlude-track { padding:12px; text-align:center; background:#172033; border-radius:6px; font-weight:800; }
+        .guide-explanation-panel { min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#111827; padding:18px; }
+        .guide-explanation-panel h3 { margin:4px 0 18px; font-size:24px; }
+        .guide-explanation-panel h4 { margin:16px 0 5px; color:#93c5fd; }
+        .guide-explanation-panel p { margin:0; line-height:1.55; color:#e2e8f0; }
+        .guide-explanation-label { color:#facc15; text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:800; }
+        @media (max-width: 820px) {
+          .guidebook-modal { height:92dvh; }
+          .guidebook-layout { grid-template-columns:1fr; overflow:auto; }
+          .guide-snapshot-frame { min-height:430px; }
+          .guide-explanation-panel { min-height:260px; }
+        }
+
+
         .sequence-track-line {
           align-self: center;
         }
