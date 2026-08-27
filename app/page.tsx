@@ -2308,20 +2308,22 @@ export default function Home() {
               <div className="guide-live-frame">
                 {guidebookTab === "toolbar" && (
                   <div className="guide-live-page guide-toolbar-live">
-                    <div className="windows-menubar guide-readonly">
-                      {[
-                        ["New", "Starts a new Parade Sequence.", "Use when preparing a different parade programme.", "The current working sequence is cleared after confirmation."],
-                        ["Open", "Opens a saved Parade Sequence.", "Use to reload a prepared parade programme.", "Required music should already be in the Music Library."],
-                        ["Save", "Saves the current Parade Sequence.", "Use after arranging tracks and actions.", "Save regularly before operational use."],
-                        ["About", "", "", ""],
-                        ["Guidebook", "Opens this interactive Guidebook.", "Use whenever an operator needs help.", "The Guidebook is read-only and cannot operate parade audio."],
-                      ].map(([title, functionText, whenText, notes]) => (
-                        <button key={title} className="guide-clickable" onClick={() => setGuideTopic({title,functionText,whenText,notes})}>{title}</button>
-                      ))}
-                    </div>
-                    <div className="windows-tabs guide-tabs-live">
-                      <button className={`guide-clickable ${guideTopic?.title === "Editor Tab" ? "active" : ""}`} onClick={() => setGuideTopic({title:"Editor Tab",functionText:"Opens the Parade Editor.",whenText:"Use while building or editing a parade programme.",notes:"The Editor prepares the sequence used by Parade Manager."})}>Editor</button>
-                      <button className={`guide-clickable ${guideTopic?.title === "Manager Tab" ? "active" : ""}`} onClick={() => setGuideTopic({title:"Manager Tab",functionText:"Opens the Parade Manager.",whenText:"Use during rehearsal or live parade operation.",notes:"Confirm the selected track before operating cues or actions."})}>Manager</button>
+                    <div className="guide-toolbar-crop">
+                      <div className="windows-menubar guide-readonly">
+                        {[
+                          ["New", "Starts a new Parade Sequence.", "Use when preparing a different parade programme.", "The current working sequence is cleared after confirmation."],
+                          ["Open", "Opens a saved Parade Sequence.", "Use to reload a prepared parade programme.", "Required music should already be in the Music Library."],
+                          ["Save", "Saves the current Parade Sequence.", "Use after arranging tracks and actions.", "Save regularly before operational use."],
+                          ["About", "", "", ""],
+                          ["Guidebook", "Opens this interactive Guidebook.", "Use whenever an operator needs help.", "The Guidebook is read-only and cannot operate parade audio."],
+                        ].map(([title, functionText, whenText, notes]) => (
+                          <button key={title} className="guide-clickable" onClick={() => setGuideTopic({title,functionText,whenText,notes})}>{title}</button>
+                        ))}
+                      </div>
+                      <div className="windows-tabs guide-tabs-live">
+                        <button className={`guide-clickable ${guideTopic?.title === "Editor Tab" ? "active" : ""}`} onClick={() => setGuideTopic({title:"Editor Tab",functionText:"Opens the Parade Editor.",whenText:"Use while building or editing a parade programme.",notes:"The Editor prepares the sequence used by Parade Manager."})}>Editor</button>
+                        <button className={`guide-clickable ${guideTopic?.title === "Manager Tab" ? "active" : ""}`} onClick={() => setGuideTopic({title:"Manager Tab",functionText:"Opens the Parade Manager.",whenText:"Use during rehearsal or live parade operation.",notes:"Confirm the selected track before operating cues or actions."})}>Manager</button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2419,9 +2421,17 @@ export default function Home() {
                 )}
               </div>
 
-              <aside className="guide-explanation-panel">
-                {guideTopic ? (
-                  guideTopic.title === "About" ? (
+              {guideTopic && (
+                <aside className="guide-explanation-panel">
+                  <button
+                    className="guide-explanation-close"
+                    type="button"
+                    aria-label="Close explanation"
+                    onClick={() => setGuideTopic(null)}
+                  >
+                    ×
+                  </button>
+                  {guideTopic.title === "About" ? (
                     <>
                       <div className="guide-explanation-label">About Parade Suite</div>
                       <h3>Parade Suite</h3>
@@ -2431,10 +2441,16 @@ export default function Home() {
                       <p>Designed for the preparation and management of parade music, ceremonial cues, drum cues and timing maps.</p>
                     </>
                   ) : (
-                    <><div className="guide-explanation-label">Selected control</div><h3>{guideTopic.title}</h3><h4>What it does</h4><p>{guideTopic.functionText}</p><h4>When to use it</h4><p>{guideTopic.whenText}</p><h4>Important notes</h4><p>{guideTopic.notes}</p></>
-                  )
-                ) : <><div className="guide-explanation-label">Guide mode</div><h3>Click a control in the mirrored interface</h3><p>The page on the left uses the same Parade Suite layout and styling as the operational interface, but it is read-only.</p><p>Click a control to display its explanation here. Nothing in Guide mode can start or stop parade audio.</p></>}
-              </aside>
+                    <>
+                      <div className="guide-explanation-label">Selected control</div>
+                      <h3>{guideTopic.title}</h3>
+                      <h4>What it does</h4><p>{guideTopic.functionText}</p>
+                      <h4>When to use it</h4><p>{guideTopic.whenText}</p>
+                      <h4>Important notes</h4><p>{guideTopic.notes}</p>
+                    </>
+                  )}
+                </aside>
+              )}
             </div>
           </section>
         </div>
@@ -2585,13 +2601,13 @@ export default function Home() {
 
       <style jsx global>{`
 
-        .guidebook-modal { width:min(1180px,calc(100vw - 20px)); max-width:1180px; height:min(88dvh,860px); overflow:hidden; display:flex; flex-direction:column; }
+        .guidebook-modal { width:min(96vw,1680px); max-width:1680px; height:min(94dvh,980px); overflow:hidden; display:flex; flex-direction:column; }
         .guidebook-header { flex:0 0 auto; }
         .guidebook-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px; }
         .guidebook-tabs button { padding:9px 14px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#e5e7eb; font-weight:700; }
         .guidebook-tabs button.selected { background:#2563eb; border-color:#60a5fa; color:#fff; }
-        .guidebook-layout { min-height:0; flex:1; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; overflow:hidden; }
-        .guide-live-frame { min-width:0; width:100%; max-width:100%; min-height:0; overflow:hidden; position:relative; border:1px solid #334155; border-radius:12px; background:#0b1220; }
+        .guidebook-layout { min-height:0; flex:1; position:relative; display:block; overflow:hidden; }
+        .guide-live-frame { min-width:0; width:100%; max-width:100%; height:100%; min-height:0; overflow:hidden; position:relative; border:1px solid #334155; border-radius:12px; background:#0b1220; }
         .guide-snapshot-frame { min-width:0; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#0b1220; padding:12px; }
         .guide-snapshot-caption { color:#94a3b8; font-size:12px; margin-bottom:9px; }
         .guide-snapshot { min-width:700px; border:1px solid #475569; border-radius:10px; background:#111827; padding:14px; color:#f8fafc; box-shadow:0 12px 30px rgba(0,0,0,.28); }
@@ -2601,6 +2617,29 @@ export default function Home() {
         .guide-hotspot.red { border-color:#ef4444 !important; }
         .guide-wide { width:100%; text-align:left; }
         .guide-toolbar-row,.guide-toolbar-tabs,.guide-editor-imports,.guide-preview-row,.guide-transport-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .guide-toolbar-live {
+          zoom: 1 !important;
+          width: auto !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          padding: 18px;
+          display: flex;
+          align-items: flex-start;
+          justify-content: flex-start;
+          overflow: hidden !important;
+        }
+        .guide-toolbar-crop {
+          width: min(620px, 100%);
+          max-width: 100%;
+          overflow: hidden;
+          border: 1px solid #334155;
+          border-radius: 10px;
+          background: #0b1220;
+        }
+        .guide-toolbar-crop .windows-menubar,
+        .guide-toolbar-crop .windows-tabs {
+          width: 100%;
+        }
         .guide-toolbar-app,.guide-shot-title { font-size:22px; font-weight:900; letter-spacing:.04em; margin:22px 0 12px; }
         .guide-toolbar-tabs { border-top:1px solid #334155; padding-top:12px; }
         .guide-editor-grid,.guide-manager-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -2613,17 +2652,19 @@ export default function Home() {
         .guide-now-playing small { font-size:14px; color:#cbd5e1; }
         .guide-interlude-card { max-width:520px; margin:0 auto; }
         .guide-interlude-track { padding:12px; text-align:center; background:#172033; border-radius:6px; font-weight:800; }
-        .guide-explanation-panel { min-width:0; width:100%; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#111827; padding:18px; position:relative; z-index:2; }
+        .guide-explanation-panel { position:absolute; top:16px; right:16px; z-index:30; width:min(380px,calc(100% - 32px)); max-height:calc(100% - 32px); overflow:auto; border:1px solid #475569; border-radius:14px; background:rgba(17,24,39,.98); padding:20px 20px 22px; box-shadow:0 18px 55px rgba(0,0,0,.55); backdrop-filter:blur(8px); }
+        .guide-explanation-close { position:absolute; top:10px; right:12px; width:34px; height:34px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#f8fafc; font-size:24px; line-height:28px; cursor:pointer; }
+        .guide-explanation-close:hover { background:#1e293b; }
         .guide-explanation-panel h3 { margin:4px 0 18px; font-size:24px; }
         .guide-explanation-panel h4 { margin:16px 0 5px; color:#93c5fd; }
         .guide-explanation-panel p { margin:0; line-height:1.55; color:#e2e8f0; }
         .guide-explanation-label { color:#facc15; text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:800; }
         @media (max-width: 820px) {
-          .guidebook-modal { height:92dvh; }
-          .guidebook-layout { grid-template-columns:1fr; overflow:auto; }
+          .guidebook-modal { width:98vw; height:95dvh; }
+          .guidebook-layout { overflow:hidden; }
           .guide-live-frame { overflow:hidden; }
           .guide-snapshot-frame { min-height:430px; }
-          .guide-explanation-panel { min-height:260px; }
+          .guide-explanation-panel { top:auto; bottom:12px; right:12px; left:12px; width:auto; max-height:46%; }
         }
 
 
@@ -2693,11 +2734,14 @@ export default function Home() {
            individual controls. This keeps Editor/Manager proportions identical
            to the live Parade Suite UI. */
         .guide-live-page {
-          zoom: .56;
-          width: 178.572%;
+          zoom: .72;
+          width: 138.889%;
           max-width: none !important;
           min-width: 0 !important;
           overflow: visible !important;
+        }
+        .guide-live-page.guide-toolbar-live {
+          min-height: auto !important;
         }
         .guide-live-page.windows-editor,
         .guide-live-page.windows-manager {
@@ -2752,17 +2796,27 @@ export default function Home() {
         .guide-interlude-full .default-box { max-width: 430px; }
         .guide-interlude-special { margin-top: 22px !important; }
 
+        .guide-live-page.guide-toolbar-live {
+          zoom: 1 !important;
+          width: auto !important;
+          min-height: 0 !important;
+          max-width: 100% !important;
+        }
         @media (max-width: 1180px) {
-          .guide-live-page { zoom: .50; width:200%; }
+          .guide-live-page { zoom: .60; width:166.667%; }
+          .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; }
         }
         @media (max-width: 760px) {
-          .guide-live-page { zoom: .28; width:357.143%; }
-          .guidebook-layout { display:flex !important; flex-direction:column !important; overflow:auto !important; }
-          .guide-explanation-panel { min-height:210px !important; }
+          .guide-live-page { zoom: .36; width:277.778%; }
+          .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; padding: 12px; }
+          .guidebook-layout { display:block !important; overflow:hidden !important; }
         }
         @media (max-width: 430px) {
-          .guide-live-page { zoom: .23; width:434.783%; }
-          .guidebook-modal { height:96dvh !important; }
+          .guide-live-page { zoom: .29; width:344.828%; }
+          .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; padding: 10px; }
+          .guidebook-modal { width:99vw !important; height:97dvh !important; }
+          .guidebook-tabs { gap:6px; }
+          .guidebook-tabs button { padding:8px 10px; }
         }
 
         .guide-playlist-box { cursor: pointer; }
