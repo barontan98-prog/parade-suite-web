@@ -2414,7 +2414,7 @@ export default function Home() {
                 )}
 
                 {guidebookTab === "interlude" && (
-                  <section className="windows-manager guide-live-page guide-readonly">
+                  <section className="windows-manager guide-live-page guide-readonly guide-interlude-page">
                     <div className="windows-manager-title">PARADE MANAGER — INTERLUDE MUSIC</div>
                     <aside className="windows-interlude-column guide-interlude-full"><fieldset><legend>Interlude Music</legend><div className="interlude-playing-text guide-clickable" onClick={() => setGuideTopic({title:"Interlude Selection",functionText:"The active Interlude comes from the selected Interlude row in the Parade Sequence.",whenText:"Select the correct Interlude row before operating it.",notes:"The Interlude channel is independent of main parade music."})}>Selected Interlude Music</div><label className="default-box guide-clickable" onClick={() => setGuideTopic({title:"Default %",functionText:"Sets the starting volume for Interlude playback.",whenText:"Configure before pressing Play / Loop.",notes:"Live Interlude Volume can still be adjusted during playback."})}><strong>Default %</strong><input type="number" value="60" readOnly /></label><label className="default-box guide-clickable" onClick={() => setGuideTopic({title:"Fade %",functionText:"Sets the target level used by the Interlude fade behaviour.",whenText:"Configure for the required transition.",notes:"This is independent of the main parade-music Fade button."})}><strong>Fade %</strong><input type="number" value="10" readOnly /></label><h3>Interlude Volume</h3><div className="scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><input className="volume-slider guide-clickable" type="range" value="60" readOnly onClick={() => setGuideTopic({title:"Interlude Volume",functionText:"Controls the live level of the independent Interlude channel.",whenText:"Adjust while Interlude music is playing.",notes:"It does not change main parade-music volume."})}/><div className="windows-transport"><button className="guide-clickable" onClick={() => setGuideTopic({title:"Play / Loop",functionText:"Starts and continuously loops the selected Interlude.",whenText:"Use for background or transition music.",notes:"Playback begins at Default % and remains independently adjustable."})}>▶ Play / Loop</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Interlude Stop",functionText:"Fades the Interlude according to its configured fade behaviour and stops it.",whenText:"Use at the end of an Interlude segment.",notes:"The next sequence item is prepared without being automatically played."})}>■ Stop</button></div><div className="guide-interlude-special"><div className="guide-special-title">Special Interlude actions</div><div className="guide-special-buttons"><button className="guide-clickable" onClick={() => setGuideTopic({title:"Fade — Interlude Music",functionText:"When an Interlude is active, Fade uses the Interlude fade behaviour rather than the normal main-march fade behaviour.",whenText:"Use when you want the Interlude to transition smoothly toward its configured Fade % level.",notes:"Fade % controls the Interlude fade target. This is separate from the main parade-music Fade behaviour."})}>Fade</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Restore Interlude",functionText:"Restores the live Interlude volume back to the configured Default %.",whenText:"Use after fading the Interlude when you want to bring it back to its normal configured operating level.",notes:"Restore Interlude affects only the independent Interlude channel."})}>Restore Interlude</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"End Song — Interlude Music",functionText:"For an Interlude, End Song does not play the ceremonial ending beat. It behaves like Interlude Stop: the Interlude fades out, stops, resets to Default %, and Parade Suite selects the next sequence item without automatically playing it.",whenText:"Use when the Interlude should finish and the next sequence item should be prepared for a later manual Play command.",notes:"This is intentionally different from End Song for normal parade music."})}>End Song</button></div></div></fieldset></aside>
                   </section>
@@ -2607,7 +2607,7 @@ export default function Home() {
         .guidebook-tabs button { padding:9px 14px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#e5e7eb; font-weight:700; }
         .guidebook-tabs button.selected { background:#2563eb; border-color:#60a5fa; color:#fff; }
         .guidebook-layout { min-height:0; flex:1; position:relative; display:block; overflow:hidden; }
-        .guide-live-frame { min-width:0; width:100%; max-width:100%; height:100%; min-height:0; overflow:hidden; position:relative; border:1px solid #334155; border-radius:12px; background:#0b1220; }
+        .guide-live-frame { min-width:0; width:100%; max-width:100%; height:100%; min-height:0; overflow:hidden; position:relative; border:1px solid #334155; border-radius:12px; background:#0b1220; box-sizing:border-box; }
         .guide-snapshot-frame { min-width:0; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#0b1220; padding:12px; }
         .guide-snapshot-caption { color:#94a3b8; font-size:12px; margin-bottom:9px; }
         .guide-snapshot { min-width:700px; border:1px solid #475569; border-radius:10px; background:#111827; padding:14px; color:#f8fafc; box-shadow:0 12px 30px rgba(0,0,0,.28); }
@@ -2653,8 +2653,8 @@ export default function Home() {
         .guide-interlude-card { max-width:520px; margin:0 auto; }
         .guide-interlude-track { padding:12px; text-align:center; background:#172033; border-radius:6px; font-weight:800; }
         .guide-explanation-panel { position:absolute; top:16px; right:16px; z-index:30; width:min(380px,calc(100% - 32px)); max-height:calc(100% - 32px); overflow:auto; border:1px solid #475569; border-radius:14px; background:rgba(17,24,39,.98); padding:20px 20px 22px; box-shadow:0 18px 55px rgba(0,0,0,.55); backdrop-filter:blur(8px); }
-        .guide-explanation-close { position:absolute; top:10px; right:12px; width:34px; height:34px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#f8fafc; font-size:24px; line-height:28px; cursor:pointer; }
-        .guide-explanation-close:hover { background:#1e293b; }
+        .guide-explanation-close { position:absolute; top:8px; right:12px; width:auto; height:auto; padding:0; border:0; border-radius:0; background:transparent; color:#f8fafc; font-size:30px; font-weight:400; line-height:1; cursor:pointer; box-shadow:none; }
+        .guide-explanation-close:hover { background:transparent; color:#93c5fd; }
         .guide-explanation-panel h3 { margin:4px 0 18px; font-size:24px; }
         .guide-explanation-panel h4 { margin:16px 0 5px; color:#93c5fd; }
         .guide-explanation-panel p { margin:0; line-height:1.55; color:#e2e8f0; }
@@ -2734,11 +2734,32 @@ export default function Home() {
            individual controls. This keeps Editor/Manager proportions identical
            to the live Parade Suite UI. */
         .guide-live-page {
-          zoom: .72;
-          width: 138.889%;
           max-width: none !important;
           min-width: 0 !important;
           overflow: visible !important;
+        }
+        /* Fit each mirrored operational page into the Guidebook viewport without
+           changing its internal live-UI geometry. Lower zoom values shrink the
+           UI as a single unit while the compensated width preserves proportions. */
+        .guide-live-page.windows-editor {
+          zoom: .70;
+          width: 142.858%;
+        }
+        .guide-live-page.windows-manager:not(.guide-interlude-page) {
+          zoom: .60;
+          width: 166.667%;
+        }
+        .guide-live-page.guide-interlude-page {
+          zoom: .82;
+          width: 121.952%;
+          min-height: 0 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+        }
+        .guide-live-page.guide-interlude-page .windows-manager-title {
+          width:100%;
+          text-align:center;
         }
         .guide-live-page.guide-toolbar-live {
           min-height: auto !important;
@@ -2789,8 +2810,14 @@ export default function Home() {
           white-space: nowrap !important;
         }
         .guide-interlude-full {
-          width: min(760px, 100%) !important;
-          margin: 18px auto 0 !important;
+          width: min(760px, calc(100% - 48px)) !important;
+          margin: 28px auto 0 !important;
+          align-self: center !important;
+        }
+        .guide-interlude-page .guide-interlude-full {
+          position: relative;
+          left: auto;
+          right: auto;
         }
         .guide-interlude-full fieldset { padding: 20px !important; }
         .guide-interlude-full .default-box { max-width: 430px; }
@@ -2803,16 +2830,22 @@ export default function Home() {
           max-width: 100% !important;
         }
         @media (max-width: 1180px) {
-          .guide-live-page { zoom: .60; width:166.667%; }
+          .guide-live-page.windows-editor { zoom:.58; width:172.414%; }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) { zoom:.50; width:200%; }
+          .guide-live-page.guide-interlude-page { zoom:.68; width:147.059%; }
           .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; }
         }
         @media (max-width: 760px) {
-          .guide-live-page { zoom: .36; width:277.778%; }
+          .guide-live-page.windows-editor { zoom:.34; width:294.118%; }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) { zoom:.29; width:344.828%; }
+          .guide-live-page.guide-interlude-page { zoom:.45; width:222.223%; }
           .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; padding: 12px; }
           .guidebook-layout { display:block !important; overflow:hidden !important; }
         }
         @media (max-width: 430px) {
-          .guide-live-page { zoom: .29; width:344.828%; }
+          .guide-live-page.windows-editor { zoom:.27; width:370.371%; }
+          .guide-live-page.windows-manager:not(.guide-interlude-page) { zoom:.23; width:434.783%; }
+          .guide-live-page.guide-interlude-page { zoom:.38; width:263.158%; }
           .guide-live-page.guide-toolbar-live { zoom: 1 !important; width: auto !important; padding: 10px; }
           .guidebook-modal { width:99vw !important; height:97dvh !important; }
           .guidebook-tabs { gap:6px; }
