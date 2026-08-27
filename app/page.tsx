@@ -159,7 +159,6 @@ export default function Home() {
   const [interludeFadeTarget, setInterludeFadeTarget] = useState(10);
   const [interludeLive, setInterludeLive] = useState(60);
   const [musicVolume, setMusicVolume] = useState(80);
-  const [cueVolume, setCueVolume] = useState(100);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const touchDragIndex = useRef<number | null>(null);
   const [endingQueued, setEndingQueued] = useState(false);
@@ -267,6 +266,8 @@ export default function Home() {
   const [uploadFailures, setUploadFailures] = useState<string[]>([]);
   const [uploadSuccesses, setUploadSuccesses] = useState<string[]>([]);
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
+  const [previewPositionMs, setPreviewPositionMs] = useState(0);
+  const [previewDurationMs, setPreviewDurationMs] = useState(0);
 
   useEffect(() => {
     audio.current = new AudioEngine();
@@ -350,9 +351,6 @@ export default function Home() {
   }, []);
 
 
-  useEffect(() => {
-    audio.current?.setCueVolume(cueVolume / 100);
-  }, [cueVolume]);
 
   async function submitPasscode(e?: React.FormEvent) {
     e?.preventDefault();
@@ -574,20 +572,49 @@ export default function Home() {
     );
   }
 
+  useEffect(() => {
+    if (!previewTrackId) return;
+
+    const updatePreviewProgress = () => {
+      const engine = audio.current;
+      if (!engine) return;
+
+      const position = engine.getPreviewPositionMs();
+      const duration = engine.getPreviewDurationMs();
+      setPreviewPositionMs(position);
+      setPreviewDurationMs(duration);
+
+      if (!engine.isPreviewPlaying() && duration > 0 && position >= duration - 150) {
+        setPreviewTrackId(null);
+      }
+    };
+
+    updatePreviewProgress();
+    const timer = window.setInterval(updatePreviewProgress, 100);
+    return () => window.clearInterval(timer);
+  }, [previewTrackId]);
+
   async function previewMusic(track: Track) {
     try {
       if (previewTrackId === track.id && audio.current?.isPreviewPlaying()) {
         audio.current.stopPreview();
         setPreviewTrackId(null);
+        setPreviewPositionMs(0);
+        setPreviewDurationMs(0);
         return;
       }
 
       audio.current?.stopPreview();
+      setPreviewPositionMs(0);
+      setPreviewDurationMs(0);
       await audio.current?.playPreview(track.file_url, musicVolume / 100);
       setPreviewTrackId(track.id);
+      setPreviewDurationMs(audio.current?.getPreviewDurationMs() ?? 0);
     } catch (error) {
       console.error("Preview playback failed", error);
       setPreviewTrackId(null);
+      setPreviewPositionMs(0);
+      setPreviewDurationMs(0);
       setStatus(`PREVIEW FAILED • ${musicFileName(track)}`);
     }
   }
@@ -1997,6 +2024,8 @@ export default function Home() {
               onClick={() => {
                 audio.current?.stopPreview();
                 setPreviewTrackId(null);
+                setPreviewPositionMs(0);
+                setPreviewDurationMs(0);
               }}
             >
               ■ Stop
@@ -2004,9 +2033,13 @@ export default function Home() {
             <input
               type="range"
               min="0"
-              max="1000"
-              value={previewTrackId ? 1 : 0}
-              readOnly
+              max={Math.max(1, previewDurationMs)}
+              value={Math.min(previewPositionMs, Math.max(1, previewDurationMs))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                audio.current?.seekPreview(value);
+                setPreviewPositionMs(value);
+              }}
             />
             <span>
               {previewTrackId
@@ -2161,16 +2194,6 @@ export default function Home() {
                     onChange={(e) => setMusicVolume(Number(e.target.value))}
                   />
                 </label>
-                <label>
-                  <span>Cue Volume</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={cueVolume}
-                    onChange={(e) => setCueVolume(Number(e.target.value))}
-                  />
-                </label>
               </div>
             </div>
 
@@ -2259,16 +2282,6 @@ export default function Home() {
                 onChange={(e) => setMusicVolume(Number(e.target.value))}
               />
             </label>
-            <label>
-              <span>Cue Volume</span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={cueVolume}
-                onChange={(e) => setCueVolume(Number(e.target.value))}
-              />
-            </label>
           </div>
         </section>
       )}
@@ -2276,171 +2289,126 @@ export default function Home() {
 
       {guidebookOpen && (
         <div className="modal-backdrop" onMouseDown={() => setGuidebookOpen(false)}>
-          <section
-            className="admin-modal guidebook-modal"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
+          <section className="admin-modal guidebook-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="panel-header guidebook-header">
               <div>
                 <h2>Parade Suite Interactive Guidebook</h2>
-                <div className="hint">Select a page, then click a highlighted control in the visual snapshot.</div>
+                <div className="hint">This guide mirrors the current Parade Suite interface. Click a control to learn what it does.</div>
               </div>
               <button className="button" onClick={() => setGuidebookOpen(false)}>Close</button>
             </div>
 
             <div className="guidebook-tabs">
-              {([
-                ["toolbar", "Toolbar"],
-                ["editor", "Parade Editor"],
-                ["manager", "Parade Manager"],
-                ["interlude", "Interlude Music"],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  className={guidebookTab === value ? "selected" : ""}
-                  onClick={() => {
-                    setGuidebookTab(value);
-                    setGuideTopic(null);
-                  }}
-                >
-                  {label}
-                </button>
+              {([ ["toolbar", "Toolbar"], ["editor", "Parade Editor"], ["manager", "Parade Manager"], ["interlude", "Interlude Music"] ] as const).map(([value, label]) => (
+                <button key={value} className={guidebookTab === value ? "selected" : ""} onClick={() => { setGuidebookTab(value); setGuideTopic(null); }}>{label}</button>
               ))}
             </div>
 
             <div className="guidebook-layout">
-              <div className="guide-snapshot-frame">
-                <div className="guide-snapshot-caption">Interactive visual snapshot — click a control</div>
-
+              <div className="guide-live-frame">
                 {guidebookTab === "toolbar" && (
-                  <div className="guide-snapshot guide-toolbar-shot">
-                    <div className="guide-toolbar-row">
+                  <div className="guide-live-page guide-toolbar-live">
+                    <div className="windows-menubar guide-readonly">
                       {[
                         ["New", "Starts a new Parade Sequence.", "Use when preparing a different parade programme.", "The current working sequence is cleared after confirmation."],
-                        ["Open", "Opens a saved .parade.json Parade Sequence.", "Use to reload a prepared parade programme.", "The required music tracks must already exist in the Music Library."],
-                        ["Save", "Saves the current Parade Sequence.", "Use after arranging tracks and actions.", "The file stores the sequence order and actions for later use."],
-                        ["About", "Shows Parade Suite version, purpose and developer information.", "Use when checking application information.", "This does not change any parade settings."],
-                        ["Guidebook", "Opens this interactive guidebook.", "Use whenever an operator needs help with a control.", "Choose a guide tab and click the highlighted control for details."],
+                        ["Open", "Opens a saved Parade Sequence.", "Use to reload a prepared parade programme.", "Required music should already be in the Music Library."],
+                        ["Save", "Saves the current Parade Sequence.", "Use after arranging tracks and actions.", "Save regularly before operational use."],
+                        ["About", "Shows Parade Suite version, purpose and developer information.", "Use when checking application information.", "This does not change Parade Suite settings."],
+                        ["Guidebook", "Opens this interactive Guidebook.", "Use whenever an operator needs help.", "The Guidebook is read-only and cannot operate parade audio."],
                       ].map(([title, functionText, whenText, notes]) => (
-                        <button key={title} className="guide-hotspot" onClick={() => setGuideTopic({ title, functionText, whenText, notes })}>{title}</button>
+                        <button key={title} className="guide-clickable" onClick={() => setGuideTopic({title,functionText,whenText,notes})}>{title}</button>
                       ))}
                     </div>
-                    <div className="guide-toolbar-app">PARADE SUITE</div>
-                    <div className="guide-toolbar-tabs">
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Editor Tab", functionText: "Opens the Parade Editor used to prepare the Music Library and Parade Sequence.", whenText: "Use before parade operations to build or edit the programme.", notes: "Changes made here feed directly into the Parade Manager sequence." })}>Editor</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Manager Tab", functionText: "Opens the Parade Manager used for live parade operation.", whenText: "Use during rehearsals and live parade operations.", notes: "Confirm the selected track before operating ceremonial cues." })}>Manager</button>
+                    <div className="windows-tabs guide-tabs-live">
+                      <button className="active guide-clickable" onClick={() => setGuideTopic({title:"Editor Tab",functionText:"Opens the Parade Editor.",whenText:"Use while building or editing a parade programme.",notes:"The Editor prepares the sequence used by Parade Manager."})}>Editor</button>
+                      <button className="guide-clickable" onClick={() => setGuideTopic({title:"Manager Tab",functionText:"Opens the Parade Manager.",whenText:"Use during rehearsal or live parade operation.",notes:"Confirm the selected track before operating cues or actions."})}>Manager</button>
                     </div>
                   </div>
                 )}
 
                 {guidebookTab === "editor" && (
-                  <div className="guide-snapshot guide-editor-shot">
-                    <div className="guide-shot-title">PARADE EDITOR</div>
-                    <div className="guide-editor-imports">
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "+ Import Music", functionText: "Adds supported audio files to the Parade Suite Music Library.", whenText: "Use when adding new parade, ceremonial or interlude tracks.", notes: "Imported music becomes available for building Parade Sequences." })}>+ Import Music</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "+ Import LIB", functionText: "Imports the legacy timing map for a matching track.", whenText: "Use when a track needs beat-synchronised drum cues, End Song or Next Song.", notes: "A correct timing map is essential for reliable beat-synchronised operation." })}>+ Import LIB</button>
-                    </div>
-                    <div className="guide-editor-grid">
-                      <div className="guide-panel">
-                        <strong>Music Library</strong>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Search", functionText: "Filters the visible Music Library by track name.", whenText: "Use to quickly locate a track in a large library.", notes: "Search works together with the Category filter." })}>Search music track…</button>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Category Filter", functionText: "Shows only tracks in the selected music category.", whenText: "Use to narrow the Music Library to Salutes, Fast March, Interlude Music and other categories.", notes: "Select All Categories to show the entire library." })}>All Categories ▾</button>
-                        <div className="guide-list-row">✓ Knights of St John</div>
-                        <div className="guide-list-row">✓ Advance in Review Order</div>
-                        <div className="guide-list-row">✕ Example without LIB</div>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Timing-map Indicator", functionText: "Shows whether the selected music has a matching timing map.", whenText: "Check this before using beat-synchronised cues or endings.", notes: "A missing timing map means sync-dependent functions may not be available." })}>✓ / ✕ Timing Map</button>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Add to Parade →", functionText: "Adds the selected Music Library track to the Parade Sequence.", whenText: "Use while assembling the parade programme.", notes: "This does not remove or alter the Music Library copy." })}>Add to Parade →</button>
+                  <section className="windows-editor guide-live-page guide-readonly">
+                    <div className="windows-title-row">
+                      <div className="windows-editor-title">PARADE EDITOR</div>
+                      <div className="windows-import-actions">
+                        <button className="guide-clickable" onClick={() => setGuideTopic({title:"+ Import Music",functionText:"Adds supported audio files to the Music Library.",whenText:"Use when adding new parade, ceremonial or Interlude tracks.",notes:"Imported tracks remain available for future Parade Sequences."})}>+ Import Music</button>
+                        <button className="guide-clickable" onClick={() => setGuideTopic({title:"+ Import LIB",functionText:"Imports a legacy timing map for a matching track.",whenText:"Use for beat-synchronised cues and endings.",notes:"A correct timing map is required for reliable synchronisation."})}>+ Import LIB</button>
                       </div>
+                    </div>
+                    <div className="windows-editor-main">
+                      <section className="windows-library-pane">
+                        <label>Music Library</label>
+                        <input className="windows-input guide-clickable" value="Search music track…" readOnly onClick={() => setGuideTopic({title:"Search",functionText:"Filters the visible Music Library by track name.",whenText:"Use to find a track quickly.",notes:"Search works together with the Category filter."})}/>
+                        <select className="windows-input guide-clickable" value="All Categories" onChange={() => {}} onClick={() => setGuideTopic({title:"Category Filter",functionText:"Filters tracks by category.",whenText:"Use to narrow the library to a specific music type.",notes:"All Categories shows the entire library."})}><option>All Categories</option></select>
+                        <div className="windows-library-list">
+                          <div className="windows-library-row selected">✓ New Knights of St John</div>
+                          <div className="windows-library-row">✓ Advance in Review Order (Drum Beat)</div>
+                          <div className="windows-library-row">✓ Corp of Drum Solo</div>
+                        </div>
+                        <div className="windows-library-buttons">
+                          <button className="guide-clickable" onClick={() => setGuideTopic({title:"Add to Parade →",functionText:"Adds the selected Music Library track to the Parade Sequence.",whenText:"Use while assembling the programme.",notes:"The original Music Library track remains unchanged."})}>Add to Parade →</button>
+                        </div>
+                      </section>
 
-                      <div className="guide-panel">
-                        <strong>Parade Sequence</strong>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Drag Handle / Row Drag", functionText: "Reorders the Parade Sequence.", whenText: "Use when changing the order of parade music.", notes: "On phone and iPad, drag using the handle beside the sequence number." })}>≡  1   Knights of St John</button>
-                        <button className="guide-hotspot guide-wide green" onClick={() => setGuideTopic({ title: "Repeat", functionText: "Sets the sequence item to use the established repeat behaviour.", whenText: "Use when the march may need to continue or loop during parade movement.", notes: "Repeat is shown in green." })}>Action: Repeat</button>
-                        <button className="guide-hotspot guide-wide red" onClick={() => setGuideTopic({ title: "End", functionText: "Marks the sequence item as an ending track.", whenText: "Use when the music should finish and prepare the next item without auto-playing it.", notes: "End is shown in red. Repeat remains available where allowed." })}>Action: End</button>
-                        <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Remove", functionText: "Removes the selected row from the Parade Sequence only.", whenText: "Use when a track is no longer needed in the current programme.", notes: "The track remains in the Music Library." })}>Remove</button>
-                        <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Clear", functionText: "Removes every row from the current Parade Sequence.", whenText: "Use when rebuilding the programme from scratch.", notes: "This does not delete Music Library tracks." })}>Clear</button>
-                      </div>
+                      <section className="windows-sequence-pane">
+                        <label>Parade Sequence</label>
+                        <div className="windows-sequence-table">
+                          <div className="windows-sequence-header"><span>#</span><span>Track</span><span>Action</span><span>Category</span></div>
+                          <div className="windows-sequence-body">
+                            <div className="windows-sequence-row selected guide-clickable" onClick={() => setGuideTopic({title:"Sequence Row / Drag Handle",functionText:"Selects and reorders a Parade Sequence item.",whenText:"Drag when changing the programme order.",notes:"On touch devices use the ≡ handle and number area."})}><span>≡  1</span><strong>New Knights of St John</strong><span className="action-repeat">Repeat</span><span>Fast March</span></div>
+                            <div className="windows-sequence-row"><span>≡  2</span><strong>Advance in Review Order</strong><span className="action-end">End</span><span>Salutes</span></div>
+                            <div className="windows-sequence-row"><span>≡  3</span><strong>Corp of Drum Solo</strong><span className="action-end">End</span><span>Drum Solo</span></div>
+                          </div>
+                        </div>
+                        <div className="windows-sequence-controls">
+                          <button className="guide-clickable" onClick={() => setGuideTopic({title:"Remove",functionText:"Removes the selected row from the current Parade Sequence.",whenText:"Use when a track is no longer required in this programme.",notes:"It does not delete the track from the Music Library."})}>Remove</button>
+                          <span>Drag and drop rows to reorder the Parade Sequence</span>
+                          <button className="guide-clickable" onClick={() => setGuideTopic({title:"Clear",functionText:"Clears all rows from the current Parade Sequence.",whenText:"Use when rebuilding a programme from scratch.",notes:"Music Library tracks are not deleted."})}>Clear</button>
+                        </div>
+                      </section>
                     </div>
-                    <div className="guide-preview-row">
-                      <strong>Preview</strong>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "▶ Preview", functionText: "Previews the selected Music Library track without running the Parade Manager sequence.", whenText: "Use to identify or check a track while building the programme.", notes: "Preview is separate from live parade playback." })}>▶ Preview</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "■ Stop Preview", functionText: "Stops the current Music Library preview.", whenText: "Use after checking the track.", notes: "It does not affect a live Parade Manager track." })}>■ Stop</button>
-                    </div>
-                  </div>
+                    <fieldset className="windows-preview">
+                      <legend>Preview</legend>
+                      <button className="guide-clickable" onClick={() => setGuideTopic({title:"▶ Preview",functionText:"Plays the selected Music Library track for checking.",whenText:"Use while preparing the programme.",notes:"The Preview progress bar now follows preview playback and can be scrubbed."})}>▶ Preview</button>
+                      <button className="guide-clickable" onClick={() => setGuideTopic({title:"■ Stop Preview",functionText:"Stops Preview playback.",whenText:"Use after checking a track.",notes:"This control belongs to the Editor preview strip."})}>■ Stop</button>
+                      <input type="range" min="0" max="100" value="34" readOnly />
+                      <span>New Knights of St John</span>
+                    </fieldset>
+                  </section>
                 )}
 
                 {guidebookTab === "manager" && (
-                  <div className="guide-snapshot guide-manager-shot">
-                    <div className="guide-shot-title">PARADE MANAGER</div>
-                    <div className="guide-manager-grid">
-                      <div className="guide-panel">
-                        <strong>Playlist</strong>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Playlist Selection", functionText: "Selects the sequence item that Parade Suite will prepare or operate.", whenText: "Use before pressing Play or operating a cue for a specific track.", notes: "Always confirm the highlighted row and Now Playing title." })}>01. Knights of St John [Repeat]</button>
-                        <div className="guide-list-row">02. Advance in Review Order [End]</div>
-                        <div className="guide-list-row">03. Corp of Drum Solo [End]</div>
+                  <section className="windows-manager guide-live-page guide-readonly">
+                    <div className="windows-manager-title">PARADE MANAGER</div>
+                    <div className="windows-manager-body">
+                      <div className="windows-manager-left">
+                        <div className="windows-manager-top">
+                          <fieldset className="windows-playlist-box"><legend>Playlist</legend><button className="guide-clickable guide-list-button" onClick={() => setGuideTopic({title:"Playlist Selection",functionText:"Selects the Parade Sequence item to prepare or operate.",whenText:"Select the required item before Play or cue operations.",notes:"Always confirm the highlighted row and Now Playing title."})}>01. New Knights of St John [Repeat]</button><div>02. Advance in Review Order [End]</div><div>03. Corp of Drum Solo [End]</div></fieldset>
+                          <fieldset className="windows-actions-box"><legend>Actions</legend><button className="guide-clickable" onClick={() => setGuideTopic({title:"Next Song",functionText:"Performs the beat-synchronised ending and automatically starts the next track.",whenText:"Use for an immediate musical transition.",notes:"A valid timing map is required."})}>Next Song</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"End Song",functionText:"Performs the beat-synchronised ending and selects the next track without starting it.",whenText:"Use when the next item must wait for a manual Play command.",notes:"Knights of St John retains its dedicated ending."})}>End Song</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Fade",functionText:"Fades the main parade music smoothly to silence and stops it.",whenText:"Use when a gradual stop is required.",notes:"Fade does not play an ending drum sequence."})}>Fade</button></fieldset>
+                          <fieldset className="windows-cues-box"><legend>Drum Cues</legend><button className="guide-clickable" onClick={() => setGuideTopic({title:"Single Beat",functionText:"Plays one original single drum cue.",whenText:"Use for ceremonial commands requiring a single beat.",notes:"The cue is beat-synchronised when timing data is available; music ducks underneath it."})}>Single Beat</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Double Beat",functionText:"Plays the original double-beat cue.",whenText:"Use for commands requiring a double beat.",notes:"No bass boost or EQ processing is applied."})}>Double Beat</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"2× Double Beat",functionText:"Plays the established two-double-beat pattern.",whenText:"Use where two consecutive double beats are required.",notes:"Timing follows the established Parade Suite cue behaviour."})}>2× Double Beat</button></fieldset>
+                        </div>
+                        <fieldset className="windows-now-playing"><legend>Now Playing</legend><div className="guide-now-title">New Knights of St John</div><div className="action-repeat">Repeat</div><div>Next: Advance in Review Order</div></fieldset>
                       </div>
-                      <div className="guide-panel">
-                        <strong>Actions</strong>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Next Song", functionText: "Performs the beat-synchronised ceremonial ending, then automatically starts the next parade track.", whenText: "Use when the programme should transition immediately to the next track.", notes: "Requires a correct timing map for the current track." })}>Next Song</button>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "End Song", functionText: "Performs the beat-synchronised ceremonial ending and then selects the next track without playing it.", whenText: "Use when the current march must end cleanly but the next item should wait for a manual Play command.", notes: "Knights of St John keeps its dedicated ending behaviour." })}>End Song</button>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Fade", functionText: "Fades the main parade music smoothly to silence and stops it.", whenText: "Use when a gradual stop is required instead of a ceremonial ending.", notes: "Fade does not add an ending drum sequence." })}>Fade</button>
-                      </div>
-                      <div className="guide-panel">
-                        <strong>Drum Cues</strong>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Single Beat", functionText: "Plays one original single drum cue, beat-synchronised when timing data is available.", whenText: "Use for ceremonial commands requiring a single beat.", notes: "Cue audio uses the original WAV with no bass boost or EQ." })}>Single Beat</button>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Double Beat", functionText: "Plays one original double-beat cue, beat-synchronised when timing data is available.", whenText: "Use for ceremonial commands requiring a double beat.", notes: "The march is temporarily volume-ducked underneath the cue." })}>Double Beat</button>
-                        <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "2× Double Beat", functionText: "Plays the established two-double-beat ceremonial pattern.", whenText: "Use where the parade command requires two consecutive double beats.", notes: "Timing follows the established Parade Suite cue behaviour." })}>2× Double Beat</button>
-                      </div>
+                      <aside className="windows-interlude-column"><fieldset><legend>Interlude Music</legend><div className="interlude-playing-text">No Interlude Selected</div><label className="default-box"><strong>Default %</strong><input type="number" value="60" readOnly /></label><label className="default-box"><strong>Fade %</strong><input type="number" value="10" readOnly /></label><h3>Interlude Volume</h3><input className="volume-slider" type="range" value="60" readOnly /></fieldset></aside>
                     </div>
-                    <div className="guide-now-playing">NOW PLAYING — Knights of St John<br/><span>Repeat</span><br/><small>Next: Advance in Review Order</small></div>
-                    <div className="guide-transport-row">
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "▶ Play", functionText: "Starts the currently selected parade track.", whenText: "Use after confirming the correct Playlist and Now Playing selection.", notes: "For an Interlude row, the Interlude channel is prepared/used according to the current build." })}>▶ Play</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "■ Stop", functionText: "Stops the current main parade track immediately.", whenText: "Use when playback must be stopped without a musical ending.", notes: "This is different from End Song and Fade." })}>■ Stop</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Music Volume", functionText: "Controls the normal volume of the main parade-music channel.", whenText: "Set before or during operation to suit the sound system.", notes: "Drum-cue volume is controlled separately." })}>Music Volume ━━━</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Cue Volume", functionText: "Controls the audible level of the drum-cue WAV files.", whenText: "Adjust so ceremonial cues are clear without overpowering the system.", notes: "This does not EQ or bass-boost the drum cues." })}>Cue Volume ━━━</button>
-                    </div>
-                  </div>
+                    <div className="windows-manager-progress"><span>0:42</span><input type="range" min="0" max="180" value="42" readOnly/><span>3:00</span></div>
+                    <div className="windows-transport"><button className="guide-clickable" onClick={() => setGuideTopic({title:"▶ Play",functionText:"Starts the selected main parade track.",whenText:"Use after confirming the selected Playlist item.",notes:"Interlude rows are operated through the independent Interlude channel."})}>▶ Play</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"■ Stop",functionText:"Stops the current main parade track immediately.",whenText:"Use when an immediate stop is required.",notes:"This is different from End Song and Fade."})}>■ Stop</button></div>
+                    <div className="windows-volume-row"><label className="guide-clickable" onClick={() => setGuideTopic({title:"Music Volume",functionText:"Controls the normal main parade-music level.",whenText:"Set according to the sound system and venue.",notes:"Cue Volume has been removed; drum cues use their fixed original level while the music ducks underneath."})}><span>Music Volume</span><input type="range" value="80" readOnly /></label></div>
+                  </section>
                 )}
 
                 {guidebookTab === "interlude" && (
-                  <div className="guide-snapshot guide-interlude-shot">
-                    <div className="guide-shot-title">INTERLUDE MUSIC</div>
-                    <div className="guide-interlude-card">
-                      <div className="guide-interlude-track">Selected Interlude Music</div>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Default %", functionText: "Sets the starting volume used when the Interlude begins.", whenText: "Set this before starting Interlude playback.", notes: "The live Interlude Volume can still be adjusted during playback." })}>Default %   60</button>
-                      <button className="guide-hotspot" onClick={() => setGuideTopic({ title: "Fade %", functionText: "Sets the Interlude fade target/behaviour used by the current build.", whenText: "Use when configuring how the Interlude should fade during transitions.", notes: "This setting is independent from the main parade-music Fade button." })}>Fade %   10</button>
-                      <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Interlude Volume", functionText: "Controls the live volume of the independent Interlude channel.", whenText: "Adjust while the Interlude is playing to balance background/transition music.", notes: "This does not change the main parade-music volume." })}>0 ━━━━━●━━━━ 100</button>
-                      <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Interlude Selection", functionText: "The Interlude is loaded from the selected Interlude row in the Parade Sequence.", whenText: "Select the correct Interlude sequence row before operating it.", notes: "The Interlude channel is independent of the main parade-music channel." })}>Loaded from Parade Sequence</button>
-                      <button className="guide-hotspot guide-wide" onClick={() => setGuideTopic({ title: "Interlude Stop / Fade", functionText: "Stops the Interlude using its configured fade behaviour and prepares the next sequence item.", whenText: "Use at the end of a transition or background-music segment.", notes: "The next sequence item is prepared without being automatically started unless the current workflow specifies otherwise." })}>Stop / Fade Behaviour</button>
-                    </div>
-                  </div>
+                  <section className="windows-manager guide-live-page guide-readonly">
+                    <div className="windows-manager-title">PARADE MANAGER — INTERLUDE MUSIC</div>
+                    <aside className="windows-interlude-column guide-interlude-full"><fieldset><legend>Interlude Music</legend><div className="interlude-playing-text guide-clickable" onClick={() => setGuideTopic({title:"Interlude Selection",functionText:"The active Interlude comes from the selected Interlude row in the Parade Sequence.",whenText:"Select the correct Interlude row before operating it.",notes:"The Interlude channel is independent of main parade music."})}>Selected Interlude Music</div><label className="default-box guide-clickable" onClick={() => setGuideTopic({title:"Default %",functionText:"Sets the starting volume for Interlude playback.",whenText:"Configure before pressing Play / Loop.",notes:"Live Interlude Volume can still be adjusted during playback."})}><strong>Default %</strong><input type="number" value="60" readOnly /></label><label className="default-box guide-clickable" onClick={() => setGuideTopic({title:"Fade %",functionText:"Sets the target level used by the Interlude fade behaviour.",whenText:"Configure for the required transition.",notes:"This is independent of the main parade-music Fade button."})}><strong>Fade %</strong><input type="number" value="10" readOnly /></label><h3>Interlude Volume</h3><div className="scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><input className="volume-slider guide-clickable" type="range" value="60" readOnly onClick={() => setGuideTopic({title:"Interlude Volume",functionText:"Controls the live level of the independent Interlude channel.",whenText:"Adjust while Interlude music is playing.",notes:"It does not change main parade-music volume."})}/><div className="windows-transport"><button className="guide-clickable" onClick={() => setGuideTopic({title:"Play / Loop",functionText:"Starts and continuously loops the selected Interlude.",whenText:"Use for background or transition music.",notes:"Playback begins at Default % and remains independently adjustable."})}>▶ Play / Loop</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Interlude Stop",functionText:"Fades the Interlude according to its configured fade behaviour and stops it.",whenText:"Use at the end of an Interlude segment.",notes:"The next sequence item is prepared without being automatically played."})}>■ Stop</button></div></fieldset></aside>
+                  </section>
                 )}
               </div>
 
               <aside className="guide-explanation-panel">
-                {guideTopic ? (
-                  <>
-                    <div className="guide-explanation-label">Selected control</div>
-                    <h3>{guideTopic.title}</h3>
-                    <h4>What it does</h4>
-                    <p>{guideTopic.functionText}</p>
-                    <h4>When to use it</h4>
-                    <p>{guideTopic.whenText}</p>
-                    <h4>Important notes</h4>
-                    <p>{guideTopic.notes}</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="guide-explanation-label">How to use this guide</div>
-                    <h3>Click a highlighted control</h3>
-                    <p>The visual on the left represents the selected Parade Suite page. Click any outlined button or control to see its detailed explanation here.</p>
-                    <p>Use the tabs above to move between the Toolbar, Parade Editor, Parade Manager and Interlude Music.</p>
-                  </>
-                )}
+                {guideTopic ? <><div className="guide-explanation-label">Selected control</div><h3>{guideTopic.title}</h3><h4>What it does</h4><p>{guideTopic.functionText}</p><h4>When to use it</h4><p>{guideTopic.whenText}</p><h4>Important notes</h4><p>{guideTopic.notes}</p></> : <><div className="guide-explanation-label">Guide mode</div><h3>Click a control in the mirrored interface</h3><p>The page on the left uses the same Parade Suite layout and styling as the operational interface, but it is read-only.</p><p>Click a control to display its explanation here. Nothing in Guide mode can start or stop parade audio.</p></>}
               </aside>
             </div>
-
-
           </section>
         </div>
       )}
@@ -2658,6 +2626,18 @@ export default function Home() {
             min-width: 0 !important;
           }
         }
+
+        /* Mirrored live Guidebook */
+        .guide-live-frame { min-width:0; overflow:auto; border:1px solid #334155; border-radius:10px; background:#0b1220; padding:10px; }
+        .guide-live-page { min-width:760px; transform-origin:top left; }
+        .guide-readonly button, .guide-readonly input, .guide-readonly select { pointer-events:auto; }
+        .guide-clickable { outline:2px solid rgba(250,204,21,.72) !important; outline-offset:-2px; cursor:help !important; }
+        .guide-clickable:hover { box-shadow:0 0 0 2px rgba(250,204,21,.28) !important; }
+        .guide-tabs-live { margin-top:12px; }
+        .guide-list-button { width:100%; text-align:left; }
+        .guide-now-title { font-size:28px; font-weight:800; text-align:center; padding:12px; }
+        .guide-interlude-full { width:min(420px,100%); margin:18px auto; }
+        @media (max-width: 900px) { .guide-live-page { min-width:720px; } }
       `}</style>
 
     </main>
