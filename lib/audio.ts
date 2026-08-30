@@ -53,7 +53,7 @@ export class AudioEngine {
   readonly repeatCrossfadeMs = 220;
   readonly drumRollRepeatCrossfadeMs = 45;
   readonly repeatBridgeReleaseMs = 220;
-  readonly duckedMusicLevel = 0.30;
+  readonly duckedMusicLevel = 0.40;
   readonly interludeFadeDurationMs = 5000;
   readonly fadeEndDurationMs = 5000;
 
@@ -1168,7 +1168,7 @@ export class AudioEngine {
       this.ending.volume = 1.0;
 
       const fallbackMs = isKnights ? 4200 : 4500;
-      const endingDuckLevel = isKnights ? 0.15 : 0.30;
+      const endingDuckLevel = isKnights ? 0.40 : 0.40;
       this.duckMusicForCue(fallbackMs + 250, endingDuckLevel, false);
 
       return new Promise<void>(async (resolve) => {
@@ -1183,9 +1183,8 @@ export class AudioEngine {
 
     const durationMs = Math.round(buffer.duration * 1000);
 
-    // Knights of St John ending needs more separation from the march.
-    // Exact Windows behavior: standard ending uses absolute 30%; Knights uses absolute 15%.
-    const endingDuckLevel = isKnights ? 0.15 : 0.30;
+    // All musical endings now use the same 40% march duck level.
+    const endingDuckLevel = isKnights ? 0.40 : 0.40;
     this.duckMusicForCue(durationMs + 250, endingDuckLevel, false);
 
     const source = context.createBufferSource();
@@ -1229,9 +1228,9 @@ export class AudioEngine {
     const normalLevel = this.musicVolume;
 
     // Manual drum cues use relative ducking:
-    // e.g. music at 80% with a 30% duck target becomes 24%.
+    // e.g. music at 80% with a 40% duck target becomes 32%.
     // This prevents the old problem where music at 30% or lower barely
-    // ducked at all because 0.30 was treated as an absolute level.
+    // ducked at all because the duck target was treated as an absolute level.
     const requestedLevel = relativeToCurrent
       ? normalLevel * level
       : level;
@@ -1257,7 +1256,7 @@ export class AudioEngine {
 
       if (this.isMainPlaying()) {
         if (this.isPhoneBrowser() && this.mainGain) {
-          // Restore the normal phone path after the absolute 30% cue duck.
+          // Restore the normal phone path after the cue duck.
           this.main.volume = this.musicVolume;
           this.setMainGain(1.0);
         } else {
