@@ -959,15 +959,29 @@ export class AudioEngine {
 
     const composite = context.createBuffer(channelCount, totalFrames, sampleRate);
 
-    for (const cue of loaded) {
+    for (let cueIndex = 0; cueIndex < loaded.length; cueIndex += 1) {
+      const cue = loaded[cueIndex];
       const buffer = cue.buffer as AudioBuffer;
       const startFrame = Math.max(0, Math.round((cue.offsetMs / 1000) * sampleRate));
       const srcRate = buffer.sampleRate;
 
+      // Match Windows winsound/SND_ASYNC behaviour: when the next cue starts,
+      // the previous cue is replaced rather than continuing underneath it.
+      // Therefore every cue except the final one is truncated at the next
+      // LIB beat/cue boundary. The last Single Beat is allowed to ring out.
+      const naturalFrames = Math.ceil(buffer.duration * sampleRate);
+      const nextCue = loaded[cueIndex + 1];
+      const boundaryFrames = nextCue
+        ? Math.max(
+            0,
+            Math.round(((nextCue.offsetMs - cue.offsetMs) / 1000) * sampleRate)
+          )
+        : naturalFrames;
+      const frames = Math.min(naturalFrames, boundaryFrames || naturalFrames);
+
       for (let ch = 0; ch < channelCount; ch += 1) {
         const src = buffer.getChannelData(Math.min(ch, buffer.numberOfChannels - 1));
         const dst = composite.getChannelData(ch);
-        const frames = Math.ceil(buffer.duration * sampleRate);
 
         for (let i = 0; i < frames; i += 1) {
           const srcIndex = Math.min(
@@ -976,7 +990,9 @@ export class AudioEngine {
           );
           const dstIndex = startFrame + i;
           if (dstIndex >= dst.length) break;
-          dst[dstIndex] = Math.max(-1, Math.min(1, dst[dstIndex] + src[srcIndex]));
+          // No summing/overlap between consecutive ending cues. This mirrors
+          // the Windows single asynchronous cue channel.
+          dst[dstIndex] = src[srcIndex];
         }
       }
     }
