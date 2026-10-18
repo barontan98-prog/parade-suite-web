@@ -37,6 +37,19 @@ const CATEGORIES = [
   "Others",
 ];
 
+function getSelectedTrackCueDuckLevel(track: Track | null): number {
+  if (!track) return 0.40;
+  const name = normalizeTrackName(track.title);
+  if (
+    name === normalizeTrackName("NCDCC Song") ||
+    name === normalizeTrackName("We Learn, We Lead, We Serve") ||
+    name === normalizeTrackName("We Learn We Lead We Serve")
+  ) {
+    return 0.30;
+  }
+  return 0.40;
+}
+
 function normalizeLIBCategory(value?: string | null): string | undefined {
   const raw = (value || "").trim();
   if (!raw) return undefined;
@@ -140,10 +153,6 @@ export default function Home() {
   const libFileInput = useRef<HTMLInputElement | null>(null);
 
   const [tab, setTab] = useState<"editor" | "manager">("editor");
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [guidebookOpen, setGuidebookOpen] = useState(false);
-  const [guidebookTab, setGuidebookTab] = useState<"toolbar" | "editor" | "manager" | "interlude">("toolbar");
-  const [guideTopic, setGuideTopic] = useState<{ title: string; functionText: string; whenText: string; notes: string } | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [sequence, setSequence] = useState<SequenceItem[]>([]);
   const [search, setSearch] = useState("");
@@ -159,8 +168,8 @@ export default function Home() {
   const [interludeFadeTarget, setInterludeFadeTarget] = useState(10);
   const [interludeLive, setInterludeLive] = useState(60);
   const [musicVolume, setMusicVolume] = useState(80);
+  const [cueVolume, setCueVolume] = useState(100);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const touchDragIndex = useRef<number | null>(null);
   const [endingQueued, setEndingQueued] = useState(false);
   const [endingAction, setEndingAction] = useState<"end" | "next" | null>(null);
   const [activeButtons, setActiveButtons] = useState<Set<string>>(
@@ -266,8 +275,6 @@ export default function Home() {
   const [uploadFailures, setUploadFailures] = useState<string[]>([]);
   const [uploadSuccesses, setUploadSuccesses] = useState<string[]>([]);
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
-  const [previewPositionMs, setPreviewPositionMs] = useState(0);
-  const [previewDurationMs, setPreviewDurationMs] = useState(0);
 
   useEffect(() => {
     audio.current = new AudioEngine();
@@ -351,6 +358,9 @@ export default function Home() {
   }, []);
 
 
+  useEffect(() => {
+    audio.current?.setCueVolume(cueVolume / 100);
+  }, [cueVolume]);
 
   async function submitPasscode(e?: React.FormEvent) {
     e?.preventDefault();
@@ -572,49 +582,20 @@ export default function Home() {
     );
   }
 
-  useEffect(() => {
-    if (!previewTrackId) return;
-
-    const updatePreviewProgress = () => {
-      const engine = audio.current;
-      if (!engine) return;
-
-      const position = engine.getPreviewPositionMs();
-      const duration = engine.getPreviewDurationMs();
-      setPreviewPositionMs(position);
-      setPreviewDurationMs(duration);
-
-      if (!engine.isPreviewPlaying() && duration > 0 && position >= duration - 150) {
-        setPreviewTrackId(null);
-      }
-    };
-
-    updatePreviewProgress();
-    const timer = window.setInterval(updatePreviewProgress, 100);
-    return () => window.clearInterval(timer);
-  }, [previewTrackId]);
-
   async function previewMusic(track: Track) {
     try {
       if (previewTrackId === track.id && audio.current?.isPreviewPlaying()) {
         audio.current.stopPreview();
         setPreviewTrackId(null);
-        setPreviewPositionMs(0);
-        setPreviewDurationMs(0);
         return;
       }
 
       audio.current?.stopPreview();
-      setPreviewPositionMs(0);
-      setPreviewDurationMs(0);
       await audio.current?.playPreview(track.file_url, musicVolume / 100);
       setPreviewTrackId(track.id);
-      setPreviewDurationMs(audio.current?.getPreviewDurationMs() ?? 0);
     } catch (error) {
       console.error("Preview playback failed", error);
       setPreviewTrackId(null);
-      setPreviewPositionMs(0);
-      setPreviewDurationMs(0);
       setStatus(`PREVIEW FAILED • ${musicFileName(track)}`);
     }
   }
@@ -1232,7 +1213,7 @@ export default function Home() {
     // Exact Windows v0.104 behavior when no march is playing:
     // play one cue immediately.
     if (!engine.isMainPlaying()) {
-      await engine.playCueFile(filename, 950, 0.30);
+      await engine.playCueFile(filename, 950, getSelectedTrackCueDuckLevel(selectedTrack));
       setSyncStatus("Cue played immediately");
       setButtonActive(buttonName, false);
       return;
@@ -1244,7 +1225,7 @@ export default function Home() {
     // Exact Windows fallback when there is no timing map:
     // play one cue immediately.
     if (!beatMap.length) {
-      await engine.playCueFile(filename, 950, 0.30);
+      await engine.playCueFile(filename, 950, getSelectedTrackCueDuckLevel(selectedTrack));
       setSyncStatus("Beat Sync: no timing map — cue played immediately");
       setButtonActive(buttonName, false);
       return;
@@ -1259,7 +1240,7 @@ export default function Home() {
     }
 
     if (target === null) {
-      await engine.playCueFile(filename, 950, 0.30);
+      await engine.playCueFile(filename, 950, getSelectedTrackCueDuckLevel(selectedTrack));
       setButtonActive(buttonName, false);
       return;
     }
@@ -1269,25 +1250,18 @@ export default function Home() {
     // IMPORTANT iOS fix:
     // schedule the AudioBufferSourceNode NOW on the WebAudio clock.
     // Do not wait until the cue time and then call play().
-    const firstScheduled = engine.isPhoneBrowser()
-      ? await engine.scheduleCueFileAtMainPosition(
-          filename,
-          target - 45,
-          950,
-          0.30
-        )
-      : await engine.scheduleCueFile(
-          filename,
-          delay,
-          950,
-          0.30
-        );
+    const firstScheduled = await engine.scheduleCueFile(
+      filename,
+      delay,
+      950,
+      getSelectedTrackCueDuckLevel(selectedTrack)
+    );
 
     if (!firstScheduled) {
       // Fallback only if WebAudio scheduling itself is unavailable.
       schedule(
         delay,
-        () => void engine.playCueFile(filename, 950, 0.30)
+        () => void engine.playCueFile(filename, 950, getSelectedTrackCueDuckLevel(selectedTrack))
       );
     }
 
@@ -1296,24 +1270,17 @@ export default function Home() {
       const fullInterval = row?.full_ms ?? 500;
       const secondDelay = delay + (2 * fullInterval);
 
-      const secondScheduled = engine.isPhoneBrowser()
-        ? await engine.scheduleCueFileAtMainPosition(
-            filename,
-            target - 45 + (2 * fullInterval),
-            950,
-            0.30
-          )
-        : await engine.scheduleCueFile(
-            filename,
-            secondDelay,
-            950,
-            0.30
-          );
+      const secondScheduled = await engine.scheduleCueFile(
+        filename,
+        secondDelay,
+        950,
+        getSelectedTrackCueDuckLevel(selectedTrack)
+      );
 
       if (!secondScheduled) {
         schedule(
           secondDelay,
-          () => void engine.playCueFile(filename, 950, 0.30)
+          () => void engine.playCueFile(filename, 950, getSelectedTrackCueDuckLevel(selectedTrack))
         );
       }
     }
@@ -1401,6 +1368,7 @@ export default function Home() {
     const isKnights =
       normalizeTrackName(selectedTrack.title) ===
       normalizeTrackName("Knights of St John");
+    const endingDuckLevel = getSelectedTrackCueDuckLevel(selectedTrack);
 
     setStatus(
       `${isKnights ? "KNIGHTS ENDING" : "ORIGINAL ENDING"} QUEUED • ${
@@ -1412,21 +1380,13 @@ export default function Home() {
       `Ending sync: sequence starts at ${(cueStart / 1000).toFixed(2)}s • target phrase ${(target / 1000).toFixed(2)}s`
     );
 
-    void (async () => {
-      if (engine.isPhoneBrowser()) {
-        const reached = await engine.waitForMainPosition(cueStart);
-        if (!reached) return;
-      } else {
-        await new Promise<void>((resolve) => {
-          schedule(delay, resolve);
-        });
-      }
-
-      if (generation !== endingGeneration.current) return;
+    schedule(delay, () => {
+      void (async () => {
+        if (generation !== endingGeneration.current) return;
 
         // Exact Windows authoritative trigger: wait for the actual ending WAV
         // to reach EndOfMedia, then hard-stop/unload the march.
-        await engine.playEndingCue(isKnights);
+        await engine.playEndingCue(isKnights, endingDuckLevel);
 
         if (generation !== endingGeneration.current) return;
 
@@ -1456,7 +1416,8 @@ export default function Home() {
             setStatus("SONG ENDED • end of playlist");
           }
         }
-    })();
+      })();
+    });
 
     // Same Windows fallback watchdog: 12 s after cue delay.
     schedule(delay + 12000, () => {
@@ -1708,8 +1669,6 @@ export default function Home() {
           <button onClick={() => void newParade()}>New</button>
           <button onClick={() => paradeFileInput.current?.click()}>Open</button>
           <button onClick={saveParadeSequence}>Save</button>
-          <button onClick={() => setAboutOpen(true)}>About</button>
-          <button onClick={() => setGuidebookOpen(true)}>Guidebook</button>
         </div>
 
         <div className="web-account-actions">
@@ -1849,11 +1808,9 @@ export default function Home() {
               </div>
 
               <div className="windows-library-buttons">
-                {accessUser.role === "admin" && (
-                  <button onClick={() => void deleteSelectedLibraryTrack()}>
-                    Delete
-                  </button>
-                )}
+                <button onClick={() => void deleteSelectedLibraryTrack()}>
+                  Delete
+                </button>
                 <button onClick={() => void addSelectedLibraryTrack()}>
                   Add to Parade →
                 </button>
@@ -1878,7 +1835,6 @@ export default function Home() {
                     return (
                       <div
                         key={item.id}
-                        data-sequence-index={index}
                         className={`windows-sequence-row ${
                           selectedIndex === index ? "selected" : ""
                         }`}
@@ -1891,98 +1847,8 @@ export default function Home() {
                           setDragIndex(null);
                         }}
                       >
-                        <div
-                          className="sequence-track-line"
-                          style={{
-                            gridColumn: "1 / span 2",
-                            display: "flex",
-                            alignItems: "center",
-                            minWidth: 0,
-                            width: "100%",
-                            gap: "12px",
-                          }}
-                        >
-                          <span
-                            className="sequence-drag-handle"
-                            title="Drag to reorder"
-                            aria-label="Drag to reorder"
-                            onTouchStart={(e) => {
-                              touchDragIndex.current = index;
-                              setSelectedIndex(index);
-                              if (e.cancelable) e.preventDefault();
-                            }}
-                            onTouchMove={(e) => {
-                              if (touchDragIndex.current !== null && e.cancelable) {
-                                e.preventDefault();
-                              }
-                            }}
-                            onTouchEnd={(e) => {
-                              const from = touchDragIndex.current;
-                              touchDragIndex.current = null;
-                              if (from === null) return;
-
-                              const touch = e.changedTouches[0];
-                              if (!touch) return;
-                              const target = document
-                                .elementFromPoint(touch.clientX, touch.clientY)
-                                ?.closest<HTMLElement>("[data-sequence-index]");
-                              const to = Number(target?.dataset.sequenceIndex);
-                              if (Number.isInteger(to) && to >= 0 && to < sequence.length) {
-                                void reorder(from, to);
-                              }
-                            }}
-                            style={{
-                              touchAction: "none",
-                              userSelect: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              flex: "0 0 auto",
-                              gap: "10px",
-                              cursor: "grab",
-                              height: "24px",
-                              lineHeight: 1,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            <span
-                              aria-hidden="true"
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "20px",
-                                fontWeight: 700,
-                                lineHeight: 1,
-                                height: "24px",
-                              }}
-                            >
-                              ≡
-                            </span>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                height: "24px",
-                                lineHeight: 1,
-                              }}
-                            >
-                              {index + 1}
-                            </span>
-                          </span>
-
-                          <strong
-                            className="sequence-track-title"
-                            style={{
-                              display: "block",
-                              minWidth: 0,
-                              flex: "1 1 auto",
-                              lineHeight: 1.25,
-                              margin: 0,
-                            }}
-                          >
-                            {displayMusicName(track)}
-                          </strong>
-                        </div>
+                        <span>{index + 1}</span>
+                        <strong>{displayMusicName(track)}</strong>
                         <select
                           className={`windows-action-select action-${item.action.toLowerCase()}`}
                           value={item.action}
@@ -2024,8 +1890,6 @@ export default function Home() {
               onClick={() => {
                 audio.current?.stopPreview();
                 setPreviewTrackId(null);
-                setPreviewPositionMs(0);
-                setPreviewDurationMs(0);
               }}
             >
               ■ Stop
@@ -2033,13 +1897,9 @@ export default function Home() {
             <input
               type="range"
               min="0"
-              max={Math.max(1, previewDurationMs)}
-              value={Math.min(previewPositionMs, Math.max(1, previewDurationMs))}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                audio.current?.seekPreview(value);
-                setPreviewPositionMs(value);
-              }}
+              max="1000"
+              value={previewTrackId ? 1 : 0}
+              readOnly
             />
             <span>
               {previewTrackId
@@ -2194,6 +2054,16 @@ export default function Home() {
                     onChange={(e) => setMusicVolume(Number(e.target.value))}
                   />
                 </label>
+                <label>
+                  <span>Cue Volume</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={cueVolume}
+                    onChange={(e) => setCueVolume(Number(e.target.value))}
+                  />
+                </label>
               </div>
             </div>
 
@@ -2282,250 +2152,18 @@ export default function Home() {
                 onChange={(e) => setMusicVolume(Number(e.target.value))}
               />
             </label>
+            <label>
+              <span>Cue Volume</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={cueVolume}
+                onChange={(e) => setCueVolume(Number(e.target.value))}
+              />
+            </label>
           </div>
         </section>
-      )}
-
-
-      {guidebookOpen && (
-        <div className="modal-backdrop" onMouseDown={() => setGuidebookOpen(false)}>
-          <section className="admin-modal guidebook-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="panel-header guidebook-header">
-              <div>
-                <h2>Parade Suite Interactive Guidebook</h2>
-                <div className="hint">This guide mirrors the current Parade Suite interface. Click a control to learn what it does.</div>
-              </div>
-              <button className="button" onClick={() => setGuidebookOpen(false)}>Close</button>
-            </div>
-
-            <div className="guidebook-tabs">
-              {([ ["toolbar", "Toolbar"], ["editor", "Parade Editor"], ["manager", "Parade Manager"], ["interlude", "Interlude Music"] ] as const).map(([value, label]) => (
-                <button key={value} className={guidebookTab === value ? "selected" : ""} onClick={() => { setGuidebookTab(value); setGuideTopic(null); }}>{label}</button>
-              ))}
-            </div>
-
-            <div className="guidebook-layout">
-              <div className="guide-live-frame">
-                {guidebookTab === "toolbar" && (
-                  <div className="guide-live-page guide-toolbar-live">
-                    <div className="guide-toolbar-crop">
-                      <div className="windows-menubar guide-readonly">
-                        {[
-                          ["New", "Starts a new Parade Sequence.", "Use when preparing a different parade programme.", "The current working sequence is cleared after confirmation."],
-                          ["Open", "Opens a saved Parade Sequence.", "Use to reload a prepared parade programme.", "Required music should already be in the Music Library."],
-                          ["Save", "Saves the current Parade Sequence.", "Use after arranging tracks and actions.", "Save regularly before operational use."],
-                          ["About", "", "", ""],
-                          ["Guidebook", "Opens this interactive Guidebook.", "Use whenever an operator needs help.", "The Guidebook is read-only and cannot operate parade audio."],
-                        ].map(([title, functionText, whenText, notes]) => (
-                          <button key={title} className="guide-clickable" onClick={() => setGuideTopic({title,functionText,whenText,notes})}>{title}</button>
-                        ))}
-                      </div>
-                      <div className="windows-tabs guide-tabs-live">
-                        <button className={`guide-clickable ${guideTopic?.title === "Editor Tab" ? "active" : ""}`} onClick={() => setGuideTopic({title:"Editor Tab",functionText:"Opens the Parade Editor.",whenText:"Use while building or editing a parade programme.",notes:"The Editor prepares the sequence used by Parade Manager."})}>Editor</button>
-                        <button className={`guide-clickable ${guideTopic?.title === "Manager Tab" ? "active" : ""}`} onClick={() => setGuideTopic({title:"Manager Tab",functionText:"Opens the Parade Manager.",whenText:"Use during rehearsal or live parade operation.",notes:"Confirm the selected track before operating cues or actions."})}>Manager</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {guidebookTab === "editor" && (
-                  <section className="windows-editor guide-live-page guide-readonly">
-                    <div className="windows-title-row">
-                      <div className="windows-editor-title">PARADE EDITOR</div>
-                      <div className="windows-import-actions">
-                        <button className="guide-clickable" onClick={() => setGuideTopic({title:"+ Import Music",functionText:"Adds supported audio files to the Music Library.",whenText:"Use when adding new parade, ceremonial or Interlude tracks.",notes:"Imported tracks remain available for future Parade Sequences."})}>+ Import Music</button>
-                        <button className="guide-clickable" onClick={() => setGuideTopic({title:"+ Import LIB",functionText:"Imports a legacy timing map for a matching track.",whenText:"Use for beat-synchronised cues and endings.",notes:"A correct timing map is required for reliable synchronisation."})}>+ Import LIB</button>
-                      </div>
-                    </div>
-                    <div className="windows-editor-main">
-                      <section className="windows-library-pane">
-                        <label>Music Library</label>
-                        <input className="windows-input guide-clickable" value="Search music track…" readOnly onClick={() => setGuideTopic({title:"Search",functionText:"Filters the visible Music Library by track name.",whenText:"Use to find a track quickly.",notes:"Search works together with the Category filter."})}/>
-                        <select className="windows-input guide-clickable" value="All Categories" onChange={() => {}} onClick={() => setGuideTopic({title:"Category Filter",functionText:"Filters tracks by category.",whenText:"Use to narrow the library to a specific music type.",notes:"All Categories shows the entire library."})}><option>All Categories</option></select>
-                        <div
-                          className="windows-library-list guide-library-list"
-                          onClick={() => setGuideTopic({
-                            title:"Music Library",
-                            functionText:"Shows the parade and ceremonial music available to add to the Parade Sequence.",
-                            whenText:"Use the Search and Category controls to locate the required track, then select it before adding it to the parade.",
-                            notes:"The timing icon shows whether timing data is available. Track title and category are displayed exactly as in the live Music Library."
-                          })}
-                        >
-                          <button type="button" className="windows-library-item selected guide-library-item">
-                            <span className="timing-icon">✅</span>
-                            <span className="windows-library-copy">
-                              <strong>Guard of Honour March</strong>
-                              <small>Fast March</small>
-                            </span>
-                          </button>
-                          <button type="button" className="windows-library-item guide-library-item">
-                            <span className="timing-icon">✅</span>
-                            <span className="windows-library-copy">
-                              <strong>Advance in Review Order</strong>
-                              <small>Salutes</small>
-                            </span>
-                          </button>
-                          <button type="button" className="windows-library-item guide-library-item">
-                            <span className="timing-icon">✅</span>
-                            <span className="windows-library-copy">
-                              <strong>Interlude - Viva La Vida</strong>
-                              <small>Interlude Music</small>
-                            </span>
-                          </button>
-                        </div>
-                        <div className="windows-library-buttons">
-                          <button className="guide-clickable" onClick={() => setGuideTopic({title:"Add to Parade →",functionText:"Adds the selected Music Library track to the Parade Sequence.",whenText:"Use while assembling the programme.",notes:"The original Music Library track remains unchanged."})}>Add to Parade →</button>
-                        </div>
-                      </section>
-
-                      <section className="windows-sequence-pane">
-                        <label>Parade Sequence</label>
-                        <div className="windows-sequence-table">
-                          <div className="windows-sequence-header"><span>#</span><span>Track</span><span>Action</span><span>Category</span></div>
-                          <div className="windows-sequence-body">
-                            <div className="windows-sequence-row selected"><span className="guide-clickable" onClick={() => setGuideTopic({title:"Sequence Row / Drag Handle",functionText:"Selects and reorders a Parade Sequence item.",whenText:"Drag when changing the programme order.",notes:"On touch devices use the ≡ handle and number area."})}>≡  1</span><strong>Guard of Honour March</strong><button className="guide-inline-action action-repeat" style={{ color: "#22c55e", borderColor: "#22c55e" }} onClick={() => setGuideTopic({title:"Repeat",functionText:"Sets this sequence item to repeat using the track's configured Parade Suite repeat behaviour instead of ending naturally.",whenText:"Use for music that must continue or loop until the operator deliberately ends or changes it.",notes:"Repeat is a Parade Sequence action, not a live playback button. It is shown in green."})}>Repeat</button><span>Fast March</span></div>
-                            <div className="windows-sequence-row"><span>≡  2</span><strong>Advance in Review Order</strong><button className="guide-inline-action action-end" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => setGuideTopic({title:"End",functionText:"Sets this sequence item as an ending track. When it reaches its natural end, Parade Suite stops it and selects the next sequence item without automatically playing the next track.",whenText:"Use when the music should finish once and the operator must decide when the next item starts.",notes:"End is a Parade Sequence action and is shown in red. It is different from the live End Song button."})}>End</button><span>Salutes</span></div>
-                            <div className="windows-sequence-row"><span>≡  3</span><strong>Interlude - Viva La Vida</strong><button className="guide-inline-action action-interlude" style={{ color: "#93c5fd", borderColor: "#93c5fd" }} onClick={() => setGuideTopic({title:"Interlude",functionText:"Routes this sequence item through the independent Interlude Music channel.",whenText:"Use for transition or background music that should be controlled from the Interlude Music panel.",notes:"Interlude is shown in light blue and uses its own Play / Loop, Stop, volume and fade controls."})}>Interlude</button><span>Interlude Music</span></div>
-                          </div>
-                        </div>
-                        <div className="windows-sequence-controls">
-                          <button className="guide-clickable" onClick={() => setGuideTopic({title:"Remove",functionText:"Removes the selected row from the current Parade Sequence.",whenText:"Use when a track is no longer required in this programme.",notes:"It does not delete the track from the Music Library."})}>Remove</button>
-                          <span>Drag and drop rows to reorder the Parade Sequence</span>
-                          <button className="guide-clickable" onClick={() => setGuideTopic({title:"Clear",functionText:"Clears all rows from the current Parade Sequence.",whenText:"Use when rebuilding a programme from scratch.",notes:"Music Library tracks are not deleted."})}>Clear</button>
-                        </div>
-                      </section>
-                    </div>
-                    <fieldset className="windows-preview">
-                      <legend>Preview</legend>
-                      <button className="guide-clickable" onClick={() => setGuideTopic({title:"▶ Preview",functionText:"Plays the selected Music Library track for checking.",whenText:"Use while preparing the programme.",notes:"The Preview progress bar now follows preview playback and can be scrubbed."})}>▶ Preview</button>
-                      <button className="guide-clickable" onClick={() => setGuideTopic({title:"■ Stop Preview",functionText:"Stops Preview playback.",whenText:"Use after checking a track.",notes:"This control belongs to the Editor preview strip."})}>■ Stop</button>
-                      <input type="range" min="0" max="100" value="34" readOnly />
-                      <span>Guard of Honour March</span>
-                    </fieldset>
-                  </section>
-                )}
-
-                {guidebookTab === "manager" && (
-                  <section className="windows-manager guide-live-page guide-readonly">
-                    <div className="windows-manager-title">PARADE MANAGER</div>
-                    <div className="windows-manager-body">
-                      <div className="windows-manager-left">
-                        <div className="windows-manager-top">
-                          <fieldset
-                            className="windows-playlist-box guide-clickable guide-playlist-box"
-                            onClick={() => setGuideTopic({title:"Playlist",functionText:"Shows the Parade Sequence in operating order and lets the operator select the item to prepare or operate.",whenText:"Use the Playlist to confirm and select the required sequence item before playback or cue operations.",notes:"The highlighted row is the selected item. Repeat is shown in green, End in red, and Interlude uses its Interlude colour."})}
-                          >
-                            <legend>Playlist</legend>
-                            <div className="guide-playlist-row selected">
-                              <span>01. Guard of Honour March </span><span className="action-repeat">[Repeat]</span>
-                            </div>
-                            <div className="guide-playlist-row">
-                              <span>02. Advance in Review Order </span><span className="action-end">[End]</span>
-                            </div>
-                            <div className="guide-playlist-row">
-                              <span>03. Interlude - Viva La Vida </span><span className="action-interlude">[Interlude]</span>
-                            </div>
-                          </fieldset>
-                          <fieldset className="windows-actions-box"><legend>Actions</legend><button className="guide-clickable" onClick={() => setGuideTopic({title:"Next Song",functionText:"Performs the beat-synchronised ending and automatically starts the next track.",whenText:"Use for an immediate musical transition.",notes:"A valid timing map is required."})}>Next Song</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"End Song",functionText:"Performs the beat-synchronised ending and selects the next track without starting it.",whenText:"Use when the next item must wait for a manual Play command.",notes:"For normal parade music, a valid timing map is required. Interlude Music uses a different End Song behaviour, explained in the Interlude Music tab."})}>End Song</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Fade",functionText:"Fades the main parade music smoothly to silence and stops it.",whenText:"Use when a gradual stop is required.",notes:"Fade does not play an ending drum sequence."})}>Fade</button></fieldset>
-                          <fieldset className="windows-cues-box"><legend>Drum Cues</legend><button className="guide-clickable" onClick={() => setGuideTopic({title:"Single Beat",functionText:"Plays one original single drum cue.",whenText:"Use for ceremonial commands requiring a single beat.",notes:"The cue is beat-synchronised when timing data is available; music ducks underneath it."})}>Single Beat</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Double Beat",functionText:"Plays the original double-beat cue.",whenText:"Use for commands requiring a double beat.",notes:"No bass boost or EQ processing is applied."})}>Double Beat</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"2× Double Beat",functionText:"Plays the established two-double-beat pattern.",whenText:"Use where two consecutive double beats are required.",notes:"Timing follows the established Parade Suite cue behaviour."})}>2× Double Beat</button></fieldset>
-                        </div>
-                        <fieldset className="windows-now-playing"><legend>Now Playing</legend><div className="guide-now-title">Guard of Honour March</div><div className="action-repeat">Repeat</div><div>Next: Advance in Review Order</div></fieldset>
-                      </div>
-                      <aside className="windows-interlude-column"><fieldset><legend>Interlude Music</legend><div className="interlude-playing-text">No Interlude Selected</div><label className="default-box"><strong>Default %</strong><input type="number" value="60" readOnly /></label><label className="default-box"><strong>Fade %</strong><input type="number" value="10" readOnly /></label><h3>Interlude Volume</h3><input className="volume-slider" type="range" value="60" readOnly /></fieldset></aside>
-                    </div>
-                    <div className="windows-manager-progress"><span>0:42</span><input type="range" min="0" max="180" value="42" readOnly/><span>3:00</span></div>
-                    <div className="windows-transport"><button className="guide-clickable" onClick={() => setGuideTopic({title:"▶ Play",functionText:"Starts the selected main parade track.",whenText:"Use after confirming the selected Playlist item.",notes:"Interlude rows are operated through the independent Interlude channel."})}>▶ Play</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"■ Stop",functionText:"Stops the current main parade track immediately.",whenText:"Use when an immediate stop is required.",notes:"This is different from End Song and Fade."})}>■ Stop</button></div>
-                    <div className="windows-volume-row"><label className="guide-clickable" onClick={() => setGuideTopic({title:"Music Volume",functionText:"Controls the normal main parade-music level.",whenText:"Set according to the sound system and venue.",notes:"Cue Volume has been removed; drum cues use their fixed original level while the music ducks underneath."})}><span>Music Volume</span><input type="range" value="80" readOnly /></label></div>
-                  </section>
-                )}
-
-                {guidebookTab === "interlude" && (
-                  <section className="windows-manager guide-live-page guide-readonly guide-interlude-page">
-                    <div className="windows-manager-title">PARADE MANAGER — INTERLUDE MUSIC</div>
-                    <aside className="windows-interlude-column guide-interlude-full"><fieldset><legend>Interlude Music</legend><div className="interlude-playing-text guide-clickable" onClick={() => setGuideTopic({title:"Interlude Selection",functionText:"The active Interlude comes from the selected Interlude row in the Parade Sequence.",whenText:"Select the correct Interlude row before operating it.",notes:"The Interlude channel is independent of main parade music."})}>Selected Interlude Music</div><label className="default-box guide-clickable" onClick={() => setGuideTopic({title:"Default %",functionText:"Sets the starting volume for Interlude playback.",whenText:"Configure before pressing Play / Loop.",notes:"Live Interlude Volume can still be adjusted during playback."})}><strong>Default %</strong><input type="number" value="60" readOnly /></label><label className="default-box guide-clickable" onClick={() => setGuideTopic({title:"Fade %",functionText:"Sets the target level used by the Interlude fade behaviour.",whenText:"Configure for the required transition.",notes:"This is independent of the main parade-music Fade button."})}><strong>Fade %</strong><input type="number" value="10" readOnly /></label><h3>Interlude Volume</h3><div className="scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div><input className="volume-slider guide-clickable" type="range" value="60" readOnly onClick={() => setGuideTopic({title:"Interlude Volume",functionText:"Controls the live level of the independent Interlude channel.",whenText:"Adjust while Interlude music is playing.",notes:"It does not change main parade-music volume."})}/><div className="windows-transport"><button className="guide-clickable" onClick={() => setGuideTopic({title:"Play / Loop",functionText:"Starts and continuously loops the selected Interlude.",whenText:"Use for background or transition music.",notes:"Playback begins at Default % and remains independently adjustable."})}>▶ Play / Loop</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Interlude Stop",functionText:"Fades the Interlude according to its configured fade behaviour and stops it.",whenText:"Use at the end of an Interlude segment.",notes:"The next sequence item is prepared without being automatically played."})}>■ Stop</button></div><div className="guide-interlude-special"><div className="guide-special-title">Special Interlude actions</div><div className="guide-special-buttons"><button className="guide-clickable" onClick={() => setGuideTopic({title:"Fade — Interlude Music",functionText:"When an Interlude is active, Fade uses the Interlude fade behaviour rather than the normal main-march fade behaviour.",whenText:"Use when you want the Interlude to transition smoothly toward its configured Fade % level.",notes:"Fade % controls the Interlude fade target. This is separate from the main parade-music Fade behaviour."})}>Fade</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"Restore Interlude",functionText:"Restores the live Interlude volume back to the configured Default %.",whenText:"Use after fading the Interlude when you want to bring it back to its normal configured operating level.",notes:"Restore Interlude affects only the independent Interlude channel."})}>Restore Interlude</button><button className="guide-clickable" onClick={() => setGuideTopic({title:"End Song — Interlude Music",functionText:"For an Interlude, End Song does not play the ceremonial ending beat. It behaves like Interlude Stop: the Interlude fades out, stops, resets to Default %, and Parade Suite selects the next sequence item without automatically playing it.",whenText:"Use when the Interlude should finish and the next sequence item should be prepared for a later manual Play command.",notes:"This is intentionally different from End Song for normal parade music."})}>End Song</button></div></div></fieldset></aside>
-                  </section>
-                )}
-              </div>
-
-              {guideTopic && (
-                <aside className="guide-explanation-panel">
-                  <button
-                    className="guide-explanation-close"
-                    type="button"
-                    aria-label="Close explanation"
-                    onClick={() => setGuideTopic(null)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      boxShadow: "none",
-                      padding: 0,
-                      width: "auto",
-                      minWidth: 0,
-                      height: "auto",
-                      minHeight: 0,
-                      color: "#f8fafc",
-                      borderRadius: 0,
-                    }}
-                  >
-                    ×
-                  </button>
-                  {guideTopic.title === "About" ? (
-                    <>
-                      <div className="guide-explanation-label">About Parade Suite</div>
-                      <h3>Parade Suite</h3>
-                      <div className="guide-about-credit">Parade and Ceremonial Music Management System</div>
-                      <div className="guide-about-version"><strong>Version 1, © 2026</strong></div>
-                      <div className="guide-about-credit">Built by Tan Zhong Jun Baron</div>
-                      <p>Designed for the preparation and management of parade music, ceremonial cues, drum cues and timing maps.</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="guide-explanation-label">Selected control</div>
-                      <h3>{guideTopic.title}</h3>
-                      <h4>What it does</h4><p>{guideTopic.functionText}</p>
-                      <h4>When to use it</h4><p>{guideTopic.whenText}</p>
-                      <h4>Important notes</h4><p>{guideTopic.notes}</p>
-                    </>
-                  )}
-                </aside>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
-
-      {aboutOpen && (
-        <div className="modal-backdrop" onMouseDown={() => setAboutOpen(false)}>
-          <section
-            className="admin-modal"
-            onMouseDown={(e) => e.stopPropagation()}
-            style={{ maxWidth: "520px" }}
-          >
-            <div className="panel-header">
-              <div>
-                <h2>About Parade Suite</h2>
-              </div>
-              <button className="button" onClick={() => setAboutOpen(false)}>
-                Close
-              </button>
-            </div>
-
-            <div style={{ lineHeight: 1.55 }}>
-              <h2 style={{ marginBottom: "4px" }}>Parade Suite</h2>
-              <div style={{ marginBottom: "14px" }}>
-                Parade and Ceremonial Music Management System
-              </div>
-              <div style={{ marginBottom: "12px" }}>
-                <strong>Version 1, © 2026</strong>
-              </div>
-              <div style={{ marginBottom: "14px" }}>Built by Tan Zhong Jun Baron</div>
-              <div>
-                Designed for the preparation and management of parade music,
-                ceremonial cues, drum cues and timing maps.
-              </div>
-            </div>
-          </section>
-        </div>
       )}
 
       {adminOpen && accessUser.role === "admin" && (
@@ -2636,751 +2274,6 @@ export default function Home() {
           </section>
         </div>
       )}
-
-      <style jsx global>{`
-
-        .guidebook-modal { width:min(96vw,1680px); max-width:1680px; height:min(94dvh,980px); overflow:hidden; display:flex; flex-direction:column; }
-        .guidebook-header { flex:0 0 auto; }
-        .guidebook-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px; }
-        .guidebook-tabs button { padding:9px 14px; border:1px solid #475569; border-radius:8px; background:#0f172a; color:#e5e7eb; font-weight:700; }
-        .guidebook-tabs button.selected { background:#2563eb; border-color:#60a5fa; color:#fff; }
-        .guidebook-layout { min-height:0; flex:1; position:relative; display:block; overflow:hidden; }
-        .guide-live-frame { min-width:0; width:100%; max-width:100%; height:100%; min-height:0; overflow:hidden; position:relative; border:1px solid #334155; border-radius:12px; background:#0b1220; box-sizing:border-box; }
-        .guide-snapshot-frame { min-width:0; min-height:0; overflow:auto; border:1px solid #334155; border-radius:12px; background:#0b1220; padding:12px; }
-        .guide-snapshot-caption { color:#94a3b8; font-size:12px; margin-bottom:9px; }
-        .guide-snapshot { min-width:700px; border:1px solid #475569; border-radius:10px; background:#111827; padding:14px; color:#f8fafc; box-shadow:0 12px 30px rgba(0,0,0,.28); }
-        .guide-hotspot { border:2px solid #facc15 !important; background:#1f2937 !important; color:#fff !important; border-radius:7px; padding:8px 10px; font-weight:700; cursor:pointer; box-shadow:0 0 0 2px rgba(250,204,21,.08); }
-        .guide-hotspot:hover { background:#374151 !important; box-shadow:0 0 0 3px rgba(250,204,21,.18); }
-        .guide-hotspot.green { border-color:#22c55e !important; }
-        .guide-hotspot.red { border-color:#ef4444 !important; }
-        .guide-wide { width:100%; text-align:left; }
-        .guide-toolbar-row,.guide-toolbar-tabs,.guide-editor-imports,.guide-preview-row,.guide-transport-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-        .guide-toolbar-live {
-          zoom: 1 !important;
-          width: auto !important;
-          max-width: 100% !important;
-          min-width: 0 !important;
-          padding: 18px;
-          display: flex;
-          align-items: flex-start;
-          justify-content: flex-start;
-          overflow: hidden !important;
-        }
-        .guide-toolbar-crop {
-          width: min(620px, 100%);
-          max-width: 100%;
-          overflow: hidden;
-          border: 1px solid #334155;
-          border-radius: 10px;
-          background: #0b1220;
-        }
-        .guide-toolbar-crop .windows-menubar,
-        .guide-toolbar-crop .windows-tabs {
-          width: 100%;
-        }
-        .guide-toolbar-app,.guide-shot-title { font-size:22px; font-weight:900; letter-spacing:.04em; margin:22px 0 12px; }
-        .guide-toolbar-tabs { border-top:1px solid #334155; padding-top:12px; }
-        .guide-editor-grid,.guide-manager-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        .guide-manager-grid { grid-template-columns:1.2fr .8fr .8fr; }
-        .guide-panel,.guide-interlude-card { border:1px solid #475569; border-radius:8px; padding:12px; display:grid; gap:8px; background:#0f172a; }
-        .guide-list-row { padding:8px 10px; border-radius:6px; background:#172033; color:#cbd5e1; }
-        .guide-preview-row { margin-top:12px; border:1px solid #475569; border-radius:8px; padding:10px; }
-        .guide-now-playing { margin:12px 0; text-align:center; padding:18px; border:1px solid #475569; border-radius:8px; background:#0f172a; font-size:22px; font-weight:800; }
-        .guide-now-playing span { color:#22c55e; }
-        .guide-now-playing small { font-size:14px; color:#cbd5e1; }
-        .guide-interlude-card { max-width:520px; margin:0 auto; }
-        .guide-interlude-track { padding:12px; text-align:center; background:#172033; border-radius:6px; font-weight:800; }
-        .guide-explanation-panel { position:absolute; top:16px; right:16px; z-index:30; width:min(380px,calc(100% - 32px)); max-height:calc(100% - 32px); overflow:auto; border:1px solid #475569; border-radius:14px; background:rgba(17,24,39,.98); padding:20px 20px 22px; box-shadow:0 18px 55px rgba(0,0,0,.55); backdrop-filter:blur(8px); }
-        .guide-explanation-close { position:absolute; top:8px; right:12px; width:auto; height:auto; padding:0; border:0; border-radius:0; background:transparent; color:#f8fafc; font-size:30px; font-weight:400; line-height:1; cursor:pointer; box-shadow:none; }
-        .guide-explanation-close:hover { background:transparent; color:#93c5fd; }
-        .guide-explanation-panel h3 { margin:4px 0 18px; font-size:24px; }
-        .guide-explanation-panel h4 { margin:16px 0 5px; color:#93c5fd; }
-        .guide-explanation-panel p { margin:0; line-height:1.55; color:#e2e8f0; }
-        .guide-explanation-label { color:#facc15; text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:800; }
-        @media (max-width: 820px) {
-          .guidebook-modal { width:98vw; height:95dvh; }
-          .guidebook-layout { overflow:hidden; }
-          .guide-live-frame { overflow:hidden; }
-          .guide-snapshot-frame { min-height:430px; }
-          .guide-explanation-panel { top:auto; bottom:12px; right:12px; left:12px; width:auto; max-height:46%; }
-        }
-
-
-        .sequence-track-line {
-          align-self: center;
-        }
-
-        @media (max-width: 600px) {
-          .sequence-track-line {
-            grid-column: 1 / -1 !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 12px !important;
-            min-width: 0 !important;
-          }
-
-          .sequence-drag-handle {
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-            width: auto !important;
-            min-width: auto !important;
-            flex: 0 0 auto !important;
-            white-space: nowrap;
-          }
-
-          .sequence-track-title {
-            margin: 0 !important;
-            min-width: 0 !important;
-          }
-        }
-
-
-        .guide-inline-action {
-          appearance: none;
-          border: 1px solid currentColor !important;
-          border-radius: 6px;
-          background: transparent !important;
-          padding: 4px 8px !important;
-          min-height: 0 !important;
-          width: auto !important;
-          font: inherit;
-          font-weight: 700;
-          cursor: pointer;
-        }
-        .guide-interlude-special {
-          margin-top: 16px;
-          padding-top: 14px;
-          border-top: 1px solid #334155;
-        }
-        .guide-special-title {
-          margin-bottom: 10px;
-          font-weight: 700;
-          color: #f8fafc;
-        }
-        .guide-special-buttons {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-        }
-        @media (max-width: 700px) {
-          .guide-special-buttons { grid-template-columns: 1fr; }
-        }
-
-        /* Guidebook contained mini-page layout.
-           Keep the mirrored UI as a real page INSIDE the Guidebook rectangle.
-           Do not compensate zoom with widths greater than 100%: that was the
-           cause of the horizontally stretched appearance. */
-        .guide-live-frame {
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 14px;
-          box-sizing: border-box;
-        }
-        .guide-live-page {
-          box-sizing: border-box !important;
-          width: min(1180px, 100%) !important;
-          max-width: 1180px !important;
-          min-width: 0 !important;
-          margin: 0 auto !important;
-          overflow: hidden !important;
-          zoom: 1 !important;
-        }
-        .guide-live-page.guide-toolbar-live {
-          width: min(620px, 100%) !important;
-          max-width: 620px !important;
-          margin: 0 !important;
-          align-self: flex-start;
-        }
-        .guide-live-page.windows-editor,
-        .guide-live-page.windows-manager {
-          height: auto !important;
-          min-height: 0 !important;
-          max-height: 100% !important;
-        }
-
-        /* Editor: keep the text size, tighten only the geometry. */
-        .guide-live-page.windows-editor {
-          padding: 14px !important;
-        }
-        .guide-live-page.windows-editor .windows-editor-main {
-          grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr) !important;
-          gap: 12px !important;
-          min-width: 0 !important;
-          overflow: hidden !important;
-        }
-        .guide-live-page.windows-editor .windows-library-pane,
-        .guide-live-page.windows-editor .windows-sequence-pane {
-          min-width: 0 !important;
-          width: auto !important;
-        }
-        .guide-live-page.windows-editor .windows-library-list,
-        .guide-live-page.windows-editor .windows-sequence-table {
-          min-height: 235px !important;
-          max-height: 285px !important;
-          overflow: hidden !important;
-        }
-        .guide-live-page.windows-editor .windows-sequence-row,
-        .guide-live-page.windows-editor .windows-sequence-header {
-          grid-template-columns: 46px minmax(0,1fr) 108px 108px !important;
-          column-gap: 8px !important;
-          align-items: center !important;
-        }
-        .guide-live-page.windows-editor .windows-sequence-row {
-          min-height: 36px !important;
-        }
-        .guide-live-page.windows-editor .windows-sequence-row strong {
-          min-width: 0 !important;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-        }
-        .guide-live-page.windows-editor .windows-library-buttons,
-        .guide-live-page.windows-editor .windows-sequence-controls {
-          gap: 8px !important;
-        }
-        .guide-live-page.windows-editor .windows-preview {
-          margin-top: 8px !important;
-          min-height: 62px !important;
-          padding: 7px 8px !important;
-        }
-
-        /* Manager: fit all operational columns INSIDE the mini-page. */
-        .guide-live-page.windows-manager:not(.guide-interlude-page) {
-          padding: 12px !important;
-        }
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-body {
-          grid-template-columns: minmax(0, 1fr) 285px !important;
-          gap: 12px !important;
-          min-width: 0 !important;
-          overflow: hidden !important;
-        }
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-top {
-          grid-template-columns: minmax(0,1.16fr) minmax(150px,.72fr) minmax(165px,.78fr) !important;
-          gap: 10px !important;
-          min-width: 0 !important;
-        }
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist,
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions,
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues,
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
-          min-width: 0 !important;
-          overflow: hidden !important;
-        }
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist button {
-          display: grid !important;
-          grid-template-columns: 34px minmax(0,1fr) auto !important;
-          gap: 6px !important;
-          align-items: center !important;
-          min-width: 0 !important;
-          white-space: nowrap !important;
-        }
-        .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist button span {
-          min-width: 0 !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          white-space: nowrap !important;
-        }
-
-        /* Interlude: centre the actual control card in BOTH axes of the page. */
-        .guide-live-page.guide-interlude-page {
-          width: min(980px, 100%) !important;
-          max-width: 980px !important;
-          height: 100% !important;
-          min-height: 520px !important;
-          display: grid !important;
-          grid-template-rows: auto 1fr !important;
-          align-items: stretch !important;
-          justify-items: center !important;
-          padding: 14px !important;
-        }
-        .guide-live-page.guide-interlude-page .windows-manager-title {
-          width: 100% !important;
-          text-align: center !important;
-        }
-        .guide-interlude-page .guide-interlude-full {
-          position: static !important;
-          width: min(620px, calc(100% - 24px)) !important;
-          max-width: 620px !important;
-          margin: 0 !important;
-          align-self: center !important;
-          justify-self: center !important;
-        }
-        .guide-interlude-full fieldset {
-          padding: 22px !important;
-        }
-        .guide-interlude-full .default-box {
-          max-width: 430px !important;
-        }
-        .guide-interlude-special {
-          margin-top: 20px !important;
-        }
-
-        /* Tablet: keep one contained page and rebalance boxes, never widen it. */
-        @media (max-width: 1180px) {
-          .guide-live-frame { padding: 10px; }
-          .guide-live-page { width: 100% !important; max-width: 100% !important; }
-          .guide-live-page.windows-editor .windows-editor-main {
-            grid-template-columns: minmax(0,1.08fr) minmax(0,.92fr) !important;
-            gap: 9px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-body {
-            grid-template-columns: minmax(0,1fr) 235px !important;
-            gap: 8px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-top {
-            grid-template-columns: minmax(0,1.12fr) minmax(125px,.72fr) minmax(135px,.76fr) !important;
-            gap: 7px !important;
-          }
-        }
-
-        /* Responsive Guidebook layout.
-           Desktop keeps the mirrored desktop geometry. Tablet gently rebalances it.
-           Phone switches the GUIDE copy only into a readable single-column layout;
-           the live Parade Suite page remains untouched. */
-        @media (max-width: 820px) {
-          .guidebook-modal {
-            width: calc(100vw - 14px) !important;
-            height: calc(100dvh - 18px) !important;
-            max-height: none !important;
-            padding: 18px !important;
-          }
-          .guidebook-header .panel-header,
-          .guidebook-header {
-            align-items: flex-start !important;
-          }
-          .guidebook-tabs {
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0,1fr)) !important;
-            width: 100% !important;
-            gap: 8px !important;
-          }
-          .guidebook-tabs button {
-            width: 100% !important;
-            min-height: 48px !important;
-            padding: 9px 8px !important;
-            white-space: normal !important;
-          }
-          .guidebook-layout {
-            min-height: 0 !important;
-            overflow: hidden !important;
-          }
-          .guide-live-frame {
-            width: 100% !important;
-            height: 100% !important;
-            padding: 10px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            display: block !important;
-          }
-          .guide-live-page,
-          .guide-live-page.windows-editor,
-          .guide-live-page.windows-manager,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) {
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-            height: auto !important;
-            max-height: none !important;
-            min-height: 0 !important;
-            margin: 0 !important;
-            transform: none !important;
-            zoom: 1 !important;
-            overflow: visible !important;
-          }
-
-          /* Editor guide: stack the two real panels instead of shrinking them. */
-          .guide-live-page.windows-editor {
-            padding: 8px !important;
-          }
-          .guide-live-page.windows-editor .windows-title-row {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 10px !important;
-          }
-          .guide-live-page.windows-editor .windows-import-actions {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-            width: 100% !important;
-          }
-          .guide-live-page.windows-editor .windows-import-actions button {
-            width: 100% !important;
-            min-height: 44px !important;
-          }
-          .guide-live-page.windows-editor .windows-editor-main {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-            overflow: visible !important;
-          }
-          .guide-live-page.windows-editor .windows-library-pane,
-          .guide-live-page.windows-editor .windows-sequence-pane {
-            width: 100% !important;
-            min-width: 0 !important;
-          }
-          .guide-live-page.windows-editor .windows-library-list {
-            min-height: 210px !important;
-            max-height: 250px !important;
-            overflow: hidden !important;
-          }
-          .guide-live-page.windows-editor .windows-sequence-table {
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow: visible !important;
-          }
-          .guide-live-page.windows-editor .windows-sequence-header {
-            display: none !important;
-          }
-          .guide-live-page.windows-editor .windows-sequence-body {
-            display: grid !important;
-            gap: 8px !important;
-            overflow: visible !important;
-          }
-          .guide-live-page.windows-editor .windows-sequence-row {
-            display: grid !important;
-            grid-template-columns: auto minmax(0,1fr) !important;
-            grid-template-areas:
-              "drag track"
-              "action action"
-              "category category" !important;
-            gap: 7px 10px !important;
-            min-height: 0 !important;
-            padding: 10px !important;
-            border: 1px solid #334155 !important;
-            border-radius: 8px !important;
-          }
-          .guide-live-page.windows-editor .windows-sequence-row > :nth-child(1) { grid-area: drag !important; }
-          .guide-live-page.windows-editor .windows-sequence-row > :nth-child(2) { grid-area: track !important; }
-          .guide-live-page.windows-editor .windows-sequence-row > :nth-child(3) { grid-area: action !important; width:100% !important; }
-          .guide-live-page.windows-editor .windows-sequence-row > :nth-child(4) { grid-area: category !important; }
-          .guide-live-page.windows-editor .windows-sequence-row strong {
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-          }
-          .guide-live-page.windows-editor .guide-inline-action {
-            width: 100% !important;
-            min-height: 40px !important;
-            text-align: left !important;
-          }
-          .guide-live-page.windows-editor .windows-sequence-controls {
-            display: grid !important;
-            grid-template-columns: auto 1fr auto !important;
-            gap: 8px !important;
-            align-items: center !important;
-          }
-          .guide-live-page.windows-editor .windows-preview {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-            min-height: 0 !important;
-            padding: 10px !important;
-          }
-          .guide-live-page.windows-editor .windows-preview input,
-          .guide-live-page.windows-editor .windows-preview > span {
-            grid-column: 1 / -1 !important;
-            width: 100% !important;
-          }
-
-          /* Manager guide: preserve all sections, but stack them at readable size. */
-          .guide-live-page.windows-manager:not(.guide-interlude-page) {
-            padding: 8px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-body,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-left,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-top {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 10px !important;
-            width: 100% !important;
-            overflow: visible !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-now-playing,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
-            width: 100% !important;
-            min-width: 0 !important;
-            max-width: none !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist {
-            min-height: 150px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist button {
-            width: 100% !important;
-            display: block !important;
-            white-space: normal !important;
-            text-align: left !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist button span {
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box button,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box button {
-            width: 100% !important;
-            min-height: 46px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-transport {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-volume-row,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-          }
-
-          /* Phone Manager: true one-column guide layout. */
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-title {
-            width: 100% !important;
-            text-align: center !important;
-            margin: 4px 0 12px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-body {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 12px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-left {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 12px !important;
-            width: 100% !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-top {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 12px !important;
-            width: 100% !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-now-playing,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
-            display: block !important;
-            width: 100% !important;
-            min-width: 0 !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-playlist-box {
-            min-height: 170px !important;
-            padding: 10px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .guide-playlist-row {
-            padding: 8px 10px !important;
-            font-size: 14px !important;
-            line-height: 1.35 !important;
-            white-space: normal !important;
-            overflow-wrap: anywhere !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box {
-            padding: 10px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box button,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box button {
-            display: block !important;
-            width: 100% !important;
-            min-height: 48px !important;
-            margin: 0 0 8px !important;
-            white-space: normal !important;
-            font-size: 15px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-actions-box button:last-child,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-cues-box button:last-child {
-            margin-bottom: 0 !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-now-playing {
-            min-height: 150px !important;
-            padding: 18px 12px !important;
-            text-align: center !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column {
-            order: 4 !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-interlude-column fieldset {
-            width: 100% !important;
-            box-sizing: border-box !important;
-            padding: 14px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .default-box {
-            display: grid !important;
-            grid-template-columns: 1fr 90px !important;
-            align-items: center !important;
-            gap: 10px !important;
-            width: 100% !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-progress {
-            display: grid !important;
-            grid-template-columns: auto 1fr auto !important;
-            gap: 8px !important;
-            align-items: center !important;
-            width: 100% !important;
-            margin-top: 12px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-manager-progress input {
-            min-width: 0 !important;
-            width: 100% !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-transport {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-            width: 100% !important;
-            margin-top: 10px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-transport button {
-            width: 100% !important;
-            min-height: 48px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row {
-            width: 100% !important;
-            margin-top: 10px !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row label {
-            display: grid !important;
-            grid-template-columns: auto 1fr !important;
-            gap: 10px !important;
-            align-items: center !important;
-            width: 100% !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-volume-row input {
-            min-width: 0 !important;
-            width: 100% !important;
-          }
-
-          /* Standalone Interlude guide: one centred card, no desktop side-by-side squeeze. */
-          .guide-live-page.guide-interlude-page {
-            width: 100% !important;
-            max-width: 100% !important;
-            min-height: 0 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            padding: 10px 4px 24px !important;
-          }
-          .guide-live-page.guide-interlude-page .windows-manager-title {
-            width: 100% !important;
-            text-align: center !important;
-            margin-bottom: 14px !important;
-          }
-          .guide-interlude-page .guide-interlude-full {
-            width: 100% !important;
-            max-width: 520px !important;
-            margin: 0 auto !important;
-            align-self: center !important;
-          }
-          .guide-interlude-full fieldset {
-            width: 100% !important;
-            padding: 16px !important;
-          }
-          .guide-interlude-full .default-box {
-            max-width: none !important;
-            width: 100% !important;
-            grid-template-columns: minmax(0,1fr) 88px !important;
-          }
-          .guide-interlude-full .windows-transport {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-          }
-          .guide-special-buttons {
-            grid-template-columns: 1fr !important;
-          }
-
-          /* Help becomes a bottom sheet on phones/tablets. */
-          .guide-explanation-panel {
-            position: fixed !important;
-            left: 12px !important;
-            right: 12px !important;
-            bottom: 12px !important;
-            top: auto !important;
-            width: auto !important;
-            max-height: 48dvh !important;
-            z-index: 100 !important;
-          }
-        }
-
-        @media (max-width: 430px) {
-          .guidebook-modal {
-            padding: 14px !important;
-          }
-          .guidebook-tabs button {
-            min-height: 46px !important;
-            font-size: 14px !important;
-          }
-          .guide-live-frame { padding: 7px !important; }
-          .guide-live-page.windows-editor,
-          .guide-live-page.windows-manager:not(.guide-interlude-page) {
-            padding: 6px !important;
-          }
-          .guide-live-page.windows-editor .windows-import-actions {
-            grid-template-columns: 1fr !important;
-          }
-          .guide-live-page.windows-manager:not(.guide-interlude-page) .windows-transport,
-          .guide-interlude-full .windows-transport {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-
-        .guide-playlist-box { cursor: pointer; }
-        .guide-playlist-box:hover { border-color: #60a5fa !important; }
-        .guide-playlist-row {
-          display: block;
-          padding: 4px 8px;
-          border-radius: 5px;
-          line-height: 1.35;
-        }
-        .guide-playlist-row.selected {
-          background: #2563eb;
-          color: #fff;
-          font-weight: 700;
-        }
-        .guide-playlist-row .action-repeat { color: #22c55e !important; font-weight: 700; }
-        .guide-playlist-row .action-end { color: #ef4444 !important; font-weight: 700; }
-        .guide-playlist-row .action-interlude, .guide-inline-action.action-interlude { color: #93c5fd !important; font-weight: 700; }
-        .guide-about-credit { margin-bottom:14px; color:#e2e8f0; line-height:1.5; }
-        .guide-about-version { margin-bottom:14px; color:#f8fafc; }
-
-        .guide-inline-action.action-repeat { color:#22c55e !important; border-color:#22c55e !important; }
-        .guide-inline-action.action-end { color:#ef4444 !important; border-color:#ef4444 !important; }
-        .guide-inline-action.action-interlude { color:#93c5fd !important; border-color:#93c5fd !important; }
-        .guide-library-list { cursor:pointer; }
-        .guide-library-item { pointer-events:none; }
-        .guide-explanation-close,
-        .guide-explanation-close:hover,
-        .guide-explanation-close:focus,
-        .guide-explanation-close:active {
-          background:transparent !important;
-          border:0 !important;
-          box-shadow:none !important;
-          outline:none !important;
-          padding:0 !important;
-          width:auto !important;
-          min-width:0 !important;
-          height:auto !important;
-          min-height:0 !important;
-          border-radius:0 !important;
-        }
-      `}</style>
 
     </main>
   );
