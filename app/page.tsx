@@ -11,6 +11,7 @@ import {
 import { AudioEngine } from "@/lib/audio";
 import {
   beatContextForPosition,
+  loadLatestWindowsTimingMap,
   loadWindowsTimingMap,
   nextPhraseBoundaryMs,
   nextQuantizedHalfBeatMs,
@@ -1358,7 +1359,9 @@ export default function Home() {
     let beatMap = selectedTrack.timing_map ?? [];
     if (usesSlowMarchEndingSpacing) {
       try {
-        const latestWindowsMap = await loadWindowsTimingMap(musicFileName(selectedTrack));
+        const latestWindowsMap = await loadLatestWindowsTimingMap(
+          musicFileName(selectedTrack)
+        );
         const latestBeatMap = latestWindowsMap?.parsed?.beatMap ?? [];
         if (latestBeatMap.length) beatMap = latestBeatMap;
       } catch {
