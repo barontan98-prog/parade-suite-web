@@ -1399,15 +1399,15 @@ export default function Home() {
       // This preserves the Windows LIB offsets without browser timer drift,
       // overlapping source scheduling, or cutting off a Double Beat at the next beat.
       const scheduledEndingCues = [
-        { filename: "doublebeat.wav", offsetMs: 0 },
-        { filename: "doublebeat.wav", offsetMs: fullInterval },
-        { filename: "singlebeat.wav", offsetMs: 2 * fullInterval },
-        { filename: "singlebeat.wav", offsetMs: 3 * fullInterval },
-        { filename: "singlebeat.wav", offsetMs: 4 * fullInterval },
+        { filename: "original_double_beat.wav", offsetMs: 0 },
+        { filename: "original_double_beat.wav", offsetMs: fullInterval },
+        { filename: "original_single_beat.wav", offsetMs: 2 * fullInterval },
+        { filename: "original_single_beat.wav", offsetMs: 3 * fullInterval },
+        { filename: "original_single_beat.wav", offsetMs: 4 * fullInterval },
       ];
 
       void engine
-        .scheduleCompositeCueSequence(scheduledEndingCues, delay, duckLevel)
+        .scheduleExclusiveCueSequence(scheduledEndingCues, delay, duckLevel)
         .then((scheduledOk) => {
           if (scheduledOk || generation !== endingGeneration.current) return;
 
