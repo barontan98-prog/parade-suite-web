@@ -1354,6 +1354,88 @@ export default function Home() {
       return;
     }
 
+    // Slow March / Inspection Tunes use the final Windows ending pattern:
+    // Double -> Double -> Single -> Single -> Single, with every cue group
+    // exactly one full musical beat apart according to the active LIB row.
+    const category = (selectedTrack.category || "").trim().toLowerCase();
+    const usesSlowMarchEndingSpacing =
+      category === "slow march" || category === "inspection tunes";
+
+    if (usesSlowMarchEndingSpacing) {
+      const timingRow = beatContextForPosition(beatMap, target);
+      const fullInterval = Math.max(1, timingRow?.full_ms ?? 500);
+      const cueStart = Math.max(position, target - 45);
+      const delay = Math.max(0, cueStart - position);
+      const requestIndex = selectedIndex;
+      const generation = ++endingGeneration.current;
+      const duckLevel = getSelectedTrackCueDuckLevel(selectedTrack);
+
+      clearScheduledTimers();
+      setEndingQueued(true);
+      pendingEndingRef.current = true;
+      engine.setRepeatSuppressed(true);
+
+      setStatus(
+        `SLOW/INSPECTION FULL ENDING QUEUED • ${
+          action === "end" ? "STOP" : "START NEXT SONG"
+        } after final Single Beat`
+      );
+      setSyncStatus(
+        `Ending sync: Double groups ${fullInterval} ms apart • Single Beats every ${fullInterval} ms`
+      );
+
+      const cueOffsets = [0, fullInterval];
+      for (const offset of cueOffsets) {
+        schedule(delay + offset, () => {
+          if (generation !== endingGeneration.current) return;
+          void engine.playCueFile("doublebeat.wav", 950, duckLevel);
+        });
+      }
+
+      const singleOffsets = [
+        2 * fullInterval,
+        3 * fullInterval,
+        4 * fullInterval,
+      ];
+      for (const offset of singleOffsets) {
+        schedule(delay + offset, () => {
+          if (generation !== endingGeneration.current) return;
+          void engine.playCueFile("singlebeat.wav", 950, duckLevel);
+        });
+      }
+
+      schedule(delay + singleOffsets[singleOffsets.length - 1] + 1100, () => {
+        if (generation !== endingGeneration.current) return;
+
+        engine.hardStopMain();
+        pendingEndingRef.current = false;
+        setEndingQueued(false);
+        setEndingAction(null);
+
+        if (action === "next" && requestIndex + 1 < sequence.length) {
+          setStatus("CURRENT SONG ENDED • starting next track");
+          schedule(220, () => void playIndex(requestIndex + 1));
+          return;
+        }
+
+        if (action === "end") {
+          if (requestIndex + 1 < sequence.length) {
+            const nextIndex = requestIndex + 1;
+            setSelectedIndex(nextIndex);
+            const next = sequence[nextIndex];
+            setStatus(
+              next.action === "Interlude"
+                ? "SONG ENDED • next Interlude selected • use Interlude Play / Loop"
+                : "SONG ENDED • next track selected • press Play when ready"
+            );
+          } else {
+            setStatus("SONG ENDED • end of playlist");
+          }
+        }
+      });
+      return;
+    }
+
     const cueStart = Math.max(position, target - 110);
     const delay = Math.max(0, cueStart - position);
 
