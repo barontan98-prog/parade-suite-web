@@ -1302,7 +1302,7 @@ export default function Home() {
     );
   }
 
-  function requestMusicalEnding(action: "end" | "next") {
+  async function requestMusicalEnding(action: "end" | "next") {
     const actionButtonName = action === "end" ? "end" : "nextSong";
     setEndingAction(action);
     const engine = audio.current;
@@ -1321,7 +1321,7 @@ export default function Home() {
       return;
     }
 
-    void engine?.prepareCueAudio();
+    if (engine) await engine.prepareCueAudio();
 
     if (
       !engine ||
@@ -1384,12 +1384,29 @@ export default function Home() {
         `Ending sync: Double groups ${fullInterval} ms apart • Single Beats every ${fullInterval} ms`
       );
 
-      const cueOffsets = [0, fullInterval];
-      for (const offset of cueOffsets) {
-        schedule(delay + offset, () => {
-          if (generation !== endingGeneration.current) return;
-          void engine.playCueFile("doublebeat.wav", 950, duckLevel);
-        });
+      // Schedule the complete Slow March / Inspection ending NOW on the
+      // WebAudio clock. This avoids iPhone/iPad Safari restarting or clipping
+      // a shared HTMLAudio cue when several ending cues fire close together.
+      const scheduledEndingCues = [
+        { filename: "doublebeat.wav", offset: 0 },
+        { filename: "doublebeat.wav", offset: fullInterval },
+        { filename: "singlebeat.wav", offset: 2 * fullInterval },
+        { filename: "singlebeat.wav", offset: 3 * fullInterval },
+        { filename: "singlebeat.wav", offset: 4 * fullInterval },
+      ];
+
+      for (const cue of scheduledEndingCues) {
+        const cueDelay = delay + cue.offset;
+        void engine
+          .scheduleCueFile(cue.filename, cueDelay, 950, duckLevel)
+          .then((scheduledOk) => {
+            if (scheduledOk || generation !== endingGeneration.current) return;
+            // Fallback only when WebAudio scheduling itself is unavailable.
+            schedule(cueDelay, () => {
+              if (generation !== endingGeneration.current) return;
+              void engine.playCueFile(cue.filename, 950, duckLevel);
+            });
+          });
       }
 
       const singleOffsets = [
@@ -1397,12 +1414,6 @@ export default function Home() {
         3 * fullInterval,
         4 * fullInterval,
       ];
-      for (const offset of singleOffsets) {
-        schedule(delay + offset, () => {
-          if (generation !== endingGeneration.current) return;
-          void engine.playCueFile("singlebeat.wav", 950, duckLevel);
-        });
-      }
 
       schedule(delay + singleOffsets[singleOffsets.length - 1] + 1100, () => {
         if (generation !== endingGeneration.current) return;
