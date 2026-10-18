@@ -1384,30 +1384,33 @@ export default function Home() {
         `Ending sync: Double groups ${fullInterval} ms apart • Single Beats every ${fullInterval} ms`
       );
 
-      // Schedule the complete Slow March / Inspection ending NOW on the
-      // WebAudio clock. This avoids iPhone/iPad Safari restarting or clipping
-      // a shared HTMLAudio cue when several ending cues fire close together.
+      // Schedule the whole ending as one exclusive WebAudio sequence.
+      // Each cue begins on its LIB full-beat position, and the previous cue
+      // is stopped at the next cue boundary to mirror the Windows cue channel.
       const scheduledEndingCues = [
-        { filename: "doublebeat.wav", offset: 0 },
-        { filename: "doublebeat.wav", offset: fullInterval },
-        { filename: "singlebeat.wav", offset: 2 * fullInterval },
-        { filename: "singlebeat.wav", offset: 3 * fullInterval },
-        { filename: "singlebeat.wav", offset: 4 * fullInterval },
+        { filename: "doublebeat.wav", offsetMs: 0 },
+        { filename: "doublebeat.wav", offsetMs: fullInterval },
+        { filename: "singlebeat.wav", offsetMs: 2 * fullInterval },
+        { filename: "singlebeat.wav", offsetMs: 3 * fullInterval },
+        { filename: "singlebeat.wav", offsetMs: 4 * fullInterval },
       ];
 
-      for (const cue of scheduledEndingCues) {
-        const cueDelay = delay + cue.offset;
-        void engine
-          .scheduleCueFile(cue.filename, cueDelay, 950, duckLevel)
-          .then((scheduledOk) => {
-            if (scheduledOk || generation !== endingGeneration.current) return;
-            // Fallback only when WebAudio scheduling itself is unavailable.
+      void engine
+        .scheduleExclusiveCueSequence(scheduledEndingCues, delay, duckLevel)
+        .then((scheduledOk) => {
+          if (scheduledOk || generation !== endingGeneration.current) return;
+
+          // Conservative fallback only when WebAudio scheduling is unavailable.
+          // Use one persistent cue channel so later cues replace earlier cues,
+          // matching Windows rather than overlapping separate audio elements.
+          for (const cue of scheduledEndingCues) {
+            const cueDelay = delay + cue.offsetMs;
             schedule(cueDelay, () => {
               if (generation !== endingGeneration.current) return;
               void engine.playCueFile(cue.filename, 950, duckLevel);
             });
-          });
-      }
+          }
+        });
 
       const singleOffsets = [
         2 * fullInterval,
