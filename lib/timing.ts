@@ -433,6 +433,66 @@ export async function loadWindowsTimingMap(
   }
 }
 
+/**
+ * Load the latest repository/bundled timing map without consulting the
+ * browser's manually imported LIB cache.
+ *
+ * Slow March / Inspection Tunes End Song and Next Song use this so the
+ * current Windows/GitHub LIB wins over an older LIB left in localStorage.
+ */
+export async function loadLatestWindowsTimingMap(
+  audioName: string
+): Promise<{ parsed: ParsedLIB; libName: string } | null> {
+  // Current private GitHub LIB first. Intentionally skip localImportedLIBForAudio().
+  try {
+    const remoteIndex = await getRemoteTimingIndex();
+    if (remoteIndex) {
+      const remotePath = chooseTimingMapName(remoteIndex, audioName);
+
+      if (remotePath) {
+        const response = await fetch(
+          `/api/lib-maps/file?path=${encodeURIComponent(remotePath)}`,
+          { cache: "no-store" }
+        );
+
+        if (response.ok) {
+          return {
+            parsed: parseLegacyLIB(await response.text()),
+            libName: remotePath.split("/").pop() || remotePath,
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(
+      `[Parade Suite] Latest private GitHub LIB lookup unavailable for "${audioName}".`,
+      error
+    );
+  }
+
+  // Bundled compatibility fallback, still bypassing imported browser LIBs.
+  try {
+    const bundledIndex = await getBundledTimingIndex();
+    if (!bundledIndex) return null;
+
+    const mappedName = chooseTimingMapName(bundledIndex, audioName);
+    if (!mappedName) return null;
+
+    const response = await fetch(
+      `/generated_timing_maps/${encodeURIComponent(mappedName)}?v=1`,
+      { cache: "force-cache" }
+    );
+    if (!response.ok) return null;
+
+    return {
+      parsed: parseLegacyLIB(await response.text()),
+      libName: mappedName,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function pairUploadedLIBToTrack(
   allTracks: Track[],
   libFileName: string,
