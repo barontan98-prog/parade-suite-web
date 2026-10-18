@@ -52,7 +52,7 @@ function isNcdccTrack(track: Track | null | undefined): boolean {
 }
 
 function getSelectedTrackCueDuckLevel(track: Track | null): number {
-  return isNcdccTrack(track) ? 0.15 : 0.40;
+  return isNcdccTrack(track) ? 0.20 : 0.40;
 }
 
 function getSelectedTrackEndingDuckLevel(track: Track | null): number {
