@@ -52,7 +52,11 @@ function isNcdccTrack(track: Track | null | undefined): boolean {
 }
 
 function getSelectedTrackCueDuckLevel(track: Track | null): number {
-  return isNcdccTrack(track) ? 0.25 : 0.40;
+  return isNcdccTrack(track) ? 0.15 : 0.40;
+}
+
+function getSelectedTrackEndingDuckLevel(track: Track | null): number {
+  return isNcdccTrack(track) ? 0.20 : 0.40;
 }
 
 function normalizeLIBCategory(value?: string | null): string | undefined {
@@ -1375,7 +1379,7 @@ export default function Home() {
       const delay = Math.max(0, cueStart - position);
       const requestIndex = selectedIndex;
       const generation = ++endingGeneration.current;
-      const duckLevel = getSelectedTrackCueDuckLevel(selectedTrack);
+      const duckLevel = getSelectedTrackEndingDuckLevel(selectedTrack);
 
       clearScheduledTimers();
       setEndingQueued(true);
@@ -1391,9 +1395,9 @@ export default function Home() {
         `Ending sync: Double groups ${fullInterval} ms apart • Single Beats every ${fullInterval} ms`
       );
 
-      // Schedule the whole ending as one exclusive WebAudio sequence.
-      // Each cue begins on its LIB full-beat position, and the previous cue
-      // is stopped at the next cue boundary to mirror the Windows cue channel.
+      // Build the full ending into one sample-accurate WebAudio buffer.
+      // This preserves the Windows LIB offsets without browser timer drift,
+      // overlapping source scheduling, or cutting off a Double Beat at the next beat.
       const scheduledEndingCues = [
         { filename: "doublebeat.wav", offsetMs: 0 },
         { filename: "doublebeat.wav", offsetMs: fullInterval },
@@ -1403,7 +1407,7 @@ export default function Home() {
       ];
 
       void engine
-        .scheduleExclusiveCueSequence(scheduledEndingCues, delay, duckLevel)
+        .scheduleCompositeCueSequence(scheduledEndingCues, delay, duckLevel)
         .then((scheduledOk) => {
           if (scheduledOk || generation !== endingGeneration.current) return;
 
@@ -1474,7 +1478,7 @@ export default function Home() {
     const isKnights =
       normalizeTrackName(selectedTrack.title) ===
       normalizeTrackName("Knights of St John");
-    const endingDuckLevel = getSelectedTrackCueDuckLevel(selectedTrack);
+    const endingDuckLevel = getSelectedTrackEndingDuckLevel(selectedTrack);
 
     setStatus(
       `${isKnights ? "KNIGHTS ENDING" : "ORIGINAL ENDING"} QUEUED • ${
