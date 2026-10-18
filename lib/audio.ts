@@ -770,17 +770,29 @@ export class AudioEngine {
     const cached = this.cueBuffers.get(filename);
     if (cached) return cached;
 
-    try {
-      const response = await fetch(`/cues/${filename}`, { cache: "force-cache" });
-      if (!response.ok) return null;
+    const aliases: Record<string, string[]> = {
+      "original_single_beat.wav": ["original_single_beat.wav", "singlebeat.wav"],
+      "singlebeat.wav": ["singlebeat.wav", "original_single_beat.wav"],
+      "original_double_beat.wav": ["original_double_beat.wav", "doublebeat.wav"],
+      "doublebeat.wav": ["doublebeat.wav", "original_double_beat.wav"],
+    };
+    const candidates = aliases[filename.toLowerCase()] ?? [filename];
 
-      const bytes = await response.arrayBuffer();
-      const buffer = await this.cueContext.decodeAudioData(bytes.slice(0));
-      this.cueBuffers.set(filename, buffer);
-      return buffer;
-    } catch {
-      return null;
+    for (const candidate of candidates) {
+      try {
+        const response = await fetch(`/cues/${candidate}`, { cache: "force-cache" });
+        if (!response.ok) continue;
+
+        const bytes = await response.arrayBuffer();
+        const buffer = await this.cueContext.decodeAudioData(bytes.slice(0));
+        this.cueBuffers.set(filename, buffer);
+        if (candidate !== filename) this.cueBuffers.set(candidate, buffer);
+        return buffer;
+      } catch {
+        // Try the next compatible cue filename.
+      }
     }
+    return null;
   }
 
   private async playCueBuffer(
