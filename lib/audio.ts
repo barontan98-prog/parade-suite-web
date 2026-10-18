@@ -916,6 +916,101 @@ export class AudioEngine {
     return true;
   }
 
+  async scheduleCompositeCueSequence(
+    cues: Array<{ filename: string; offsetMs: number }>,
+    delayMs: number,
+    duckLevel = this.duckedMusicLevel
+  ): Promise<boolean> {
+    if (!cues.length) return false;
+
+    await this.unlockCueAudio();
+    const context = this.cueContext;
+    if (!context) return false;
+
+    if (context.state === "suspended") {
+      try {
+        await context.resume();
+      } catch {
+        return false;
+      }
+    }
+
+    const loaded = await Promise.all(
+      cues.map(async (cue) => ({
+        ...cue,
+        buffer: await this.loadCueBuffer(cue.filename),
+      }))
+    );
+    if (loaded.some((cue) => !cue.buffer)) return false;
+
+    const sampleRate = context.sampleRate;
+    const channelCount = Math.max(
+      1,
+      ...loaded.map((cue) => (cue.buffer as AudioBuffer).numberOfChannels)
+    );
+
+    let totalFrames = 1;
+    for (const cue of loaded) {
+      const buffer = cue.buffer as AudioBuffer;
+      const startFrame = Math.max(0, Math.round((cue.offsetMs / 1000) * sampleRate));
+      const durationFrames = Math.ceil(buffer.duration * sampleRate);
+      totalFrames = Math.max(totalFrames, startFrame + durationFrames);
+    }
+
+    const composite = context.createBuffer(channelCount, totalFrames, sampleRate);
+
+    for (const cue of loaded) {
+      const buffer = cue.buffer as AudioBuffer;
+      const startFrame = Math.max(0, Math.round((cue.offsetMs / 1000) * sampleRate));
+      const srcRate = buffer.sampleRate;
+
+      for (let ch = 0; ch < channelCount; ch += 1) {
+        const src = buffer.getChannelData(Math.min(ch, buffer.numberOfChannels - 1));
+        const dst = composite.getChannelData(ch);
+        const frames = Math.ceil(buffer.duration * sampleRate);
+
+        for (let i = 0; i < frames; i += 1) {
+          const srcIndex = Math.min(
+            src.length - 1,
+            Math.max(0, Math.floor((i / sampleRate) * srcRate))
+          );
+          const dstIndex = startFrame + i;
+          if (dstIndex >= dst.length) break;
+          dst[dstIndex] = Math.max(-1, Math.min(1, dst[dstIndex] + src[srcIndex]));
+        }
+      }
+    }
+
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = composite;
+    gain.gain.value = this.cueVolume;
+    source.connect(gain);
+    gain.connect(context.destination);
+
+    const startAt = context.currentTime + Math.max(0.005, delayMs / 1000);
+    this.endingSources.add(source);
+    source.addEventListener(
+      "ended",
+      () => this.endingSources.delete(source),
+      { once: true }
+    );
+
+    try {
+      source.start(startAt);
+    } catch {
+      this.endingSources.delete(source);
+      return false;
+    }
+
+    const totalDurationMs = Math.round(composite.duration * 1000) + 250;
+    window.setTimeout(() => {
+      this.duckMusicForCue(totalDurationMs, duckLevel, true);
+    }, Math.max(0, delayMs - 10));
+
+    return true;
+  }
+
   async scheduleExclusiveCueSequence(
     cues: Array<{ filename: string; offsetMs: number }>,
     delayMs: number,
