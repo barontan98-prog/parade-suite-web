@@ -37,17 +37,22 @@ const CATEGORIES = [
   "Others",
 ];
 
-function getSelectedTrackCueDuckLevel(track: Track | null): number {
-  if (!track) return 0.40;
+function isNcdccTrack(track: Track | null | undefined): boolean {
+  if (!track) return false;
   const name = normalizeTrackName(track.title);
-  if (
+  return (
     name === normalizeTrackName("NCDCC Song") ||
     name === normalizeTrackName("We Learn, We Lead, We Serve") ||
-    name === normalizeTrackName("We Learn We Lead We Serve")
-  ) {
-    return 0.30;
-  }
-  return 0.40;
+    name === normalizeTrackName("We Learn We Lead We Serve") ||
+    name === normalizeTrackName("We Learn, We Lead and Serve") ||
+    name === normalizeTrackName("We Learn We Lead and Serve") ||
+    name === normalizeTrackName("We Learn, Lead and Serve") ||
+    name === normalizeTrackName("We Learn Lead and Serve")
+  );
+}
+
+function getSelectedTrackCueDuckLevel(track: Track | null): number {
+  return isNcdccTrack(track) ? 0.25 : 0.40;
 }
 
 function normalizeLIBCategory(value?: string | null): string | undefined {
@@ -1245,7 +1250,10 @@ export default function Home() {
       return;
     }
 
-    const delay = Math.max(0, target - position - 45);
+    const targetRow = beatContextForPosition(beatMap, target);
+    const targetFullInterval = Math.max(1, targetRow?.full_ms ?? 500);
+    const manualLeadMs = 45 + (isNcdccTrack(selectedTrack) ? targetFullInterval : 0);
+    const delay = Math.max(0, target - position - manualLeadMs);
 
     // IMPORTANT iOS fix:
     // schedule the AudioBufferSourceNode NOW on the WebAudio clock.
@@ -1266,8 +1274,7 @@ export default function Home() {
     }
 
     if (repeats > 1) {
-      const row = beatContextForPosition(beatMap, target);
-      const fullInterval = row?.full_ms ?? 500;
+      const fullInterval = targetFullInterval;
       const secondDelay = delay + (2 * fullInterval);
 
       const secondScheduled = await engine.scheduleCueFile(
@@ -1450,7 +1457,10 @@ export default function Home() {
       return;
     }
 
-    const cueStart = Math.max(position, target - 110);
+    const endingRow = beatContextForPosition(beatMap, target);
+    const endingFullInterval = Math.max(1, endingRow?.full_ms ?? 500);
+    const endingLeadMs = 110 + (isNcdccTrack(selectedTrack) ? endingFullInterval : 0);
+    const cueStart = Math.max(position, target - endingLeadMs);
     const delay = Math.max(0, cueStart - position);
 
     const requestIndex = selectedIndex;
