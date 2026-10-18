@@ -16,10 +16,6 @@ export type RepeatConfig = {
 };
 
 export class AudioEngine {
-  private mainContext: AudioContext | null = null;
-  private mainSource: MediaElementAudioSourceNode | null = null;
-  private mainGain: GainNode | null = null;
-
   private interludeContext: AudioContext | null = null;
   private interludeSource: MediaElementAudioSourceNode | null = null;
   private interludeGain: GainNode | null = null;
@@ -64,7 +60,6 @@ export class AudioEngine {
     // Set CORS mode before assigning any remote Supabase URL; otherwise Safari
     // can allow the HTMLAudio element to "play" while the MediaElement source
     // outputs silence through the AudioContext.
-    this.main.crossOrigin = "anonymous";
     this.interlude.crossOrigin = "anonymous";
 
     this.main.preload = "auto";
@@ -95,81 +90,6 @@ export class AudioEngine {
   setMusicVolume(value: number) {
     this.musicVolume = Math.max(0, Math.min(1, value));
     if (!this.main.paused) this.main.volume = this.musicVolume;
-  }
-
-  isPhoneBrowser(): boolean {
-    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent || "";
-    const iPhone = /iPhone|iPod/i.test(ua);
-    const androidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
-    return iPhone || androidPhone;
-  }
-
-  private async ensureMainAudioGraph(): Promise<void> {
-    if (!this.isPhoneBrowser()) return;
-
-    const AudioContextCtor =
-      window.AudioContext ||
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioContextCtor) return;
-
-    if (!this.mainContext) this.mainContext = new AudioContextCtor();
-
-    if (!this.mainSource) {
-      try {
-        this.mainSource = this.mainContext.createMediaElementSource(this.main);
-        this.mainGain = this.mainContext.createGain();
-        this.mainSource.connect(this.mainGain);
-        this.mainGain.connect(this.mainContext.destination);
-      } catch {}
-    }
-
-    if (this.mainContext.state === "suspended") {
-      try { await this.mainContext.resume(); } catch {}
-    }
-  }
-
-  private setMainGain(value: number) {
-    const clamped = Math.max(0, Math.min(1, value));
-    if (this.mainGain && this.mainContext) {
-      try {
-        const now = this.mainContext.currentTime;
-        this.mainGain.gain.cancelScheduledValues(now);
-        this.mainGain.gain.setValueAtTime(clamped, now);
-      } catch {}
-    } else {
-      this.main.volume = clamped;
-    }
-  }
-
-  private async rampMainGain(targetVolume: number, durationMs: number) {
-    await this.ensureMainAudioGraph();
-    const target = Math.max(0, Math.min(1, targetVolume));
-
-    if (this.mainGain && this.mainContext) {
-      const context = this.mainContext;
-      const gain = this.mainGain.gain;
-      const now = context.currentTime;
-      const start = Number.isFinite(gain.value) ? gain.value : this.musicVolume;
-      try {
-        gain.cancelScheduledValues(now);
-        gain.setValueAtTime(start, now);
-        gain.linearRampToValueAtTime(target, now + durationMs / 1000);
-      } catch {}
-
-      await new Promise<void>((resolve) => {
-        const started = performance.now();
-        const tick = () => {
-          if (performance.now() - started >= durationMs) { resolve(); return; }
-          requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      });
-      return;
-    }
-
-    await this.fade(this.main, this.main.volume, target, durationMs);
   }
 
   setCueVolume(value: number) {
@@ -229,22 +149,7 @@ export class AudioEngine {
     this.repeatPlayer.volume = 0;
 
     this.bindMainEnded();
-
-    if (this.isPhoneBrowser()) {
-      // Start playback inside the operator gesture first, then attach/resume the
-      // WebAudio gain graph used for reliable iPhone/Android phone fades.
-      const playPromise = this.main.play();
-      await this.ensureMainAudioGraph();
-      if (this.mainGain) {
-        // Keep the existing HTMLAudio volume/repeat/duck logic unchanged.
-        // The phone-only GainNode stays at unity except during Fade.
-        this.setMainGain(1.0);
-      }
-      await playPromise;
-    } else {
-      await this.main.play();
-    }
-
+    await this.main.play();
     this.startRepeatMonitor();
   }
 
@@ -263,7 +168,6 @@ export class AudioEngine {
     this.repeatPlayer.removeAttribute("src");
 
     this.main.volume = this.musicVolume;
-    if (this.mainGain) this.setMainGain(1.0);
   }
 
   hardStopMain() {
@@ -281,7 +185,6 @@ export class AudioEngine {
     this.repeatPlayer.load();
 
     this.main.volume = this.musicVolume;
-    if (this.mainGain) this.setMainGain(1.0);
   }
 
   async fadeMainToStop(durationMs = this.fadeEndDurationMs) {
@@ -310,11 +213,7 @@ export class AudioEngine {
     const fades: Promise<void>[] = [];
 
     if (mainWasPlaying) {
-      fades.push(
-        this.isPhoneBrowser()
-          ? this.rampMainGain(0, durationMs)
-          : this.fade(this.main, mainStart, 0, durationMs)
-      );
+      fades.push(this.fade(this.main, mainStart, 0, durationMs));
     }
 
     if (repeatWasPlaying) {
@@ -330,7 +229,6 @@ export class AudioEngine {
 
     // Prepare the next normal track at the operator's Music Volume.
     this.main.volume = this.musicVolume;
-    if (this.mainGain) this.setMainGain(1.0);
     this.repeatPlayer.volume = 0;
     this.repeatSuppressed = false;
   }
@@ -551,7 +449,6 @@ export class AudioEngine {
       try {
         this.main.currentTime = Math.max(0, config.repeatStartMs) / 1000;
         this.main.volume = this.musicVolume;
-        if (this.mainGain) this.setMainGain(1.0);
         this.bindMainEnded();
         void this.main.play();
       } catch {}
@@ -580,25 +477,6 @@ export class AudioEngine {
 
   isPreviewPlaying(): boolean {
     return !this.preview.paused && !this.preview.ended;
-  }
-
-  getPreviewPositionMs(): number {
-    return Number.isFinite(this.preview.currentTime)
-      ? Math.max(0, Math.round(this.preview.currentTime * 1000))
-      : 0;
-  }
-
-  getPreviewDurationMs(): number {
-    return Number.isFinite(this.preview.duration)
-      ? Math.max(0, Math.round(this.preview.duration * 1000))
-      : 0;
-  }
-
-  seekPreview(positionMs: number) {
-    if (!Number.isFinite(positionMs)) return;
-    const durationMs = this.getPreviewDurationMs();
-    const targetMs = Math.max(0, durationMs > 0 ? Math.min(positionMs, durationMs) : positionMs);
-    try { this.preview.currentTime = targetMs / 1000; } catch {}
   }
 
   private async ensureInterludeAudioGraph(): Promise<void> {
@@ -1038,77 +916,6 @@ export class AudioEngine {
     return true;
   }
 
-  async scheduleCueFileAtMainPosition(
-    filename: string,
-    targetPositionMs: number,
-    duckDurationMs = 950,
-    duckLevel = this.duckedMusicLevel
-  ): Promise<boolean> {
-    await this.unlockCueAudio();
-    const buffer = await this.loadCueBuffer(filename);
-    const context = this.cueContext;
-    if (!buffer || !context) return false;
-
-    if (context.state === "suspended") {
-      try { await context.resume(); } catch { return false; }
-    }
-
-    return new Promise<boolean>((resolve) => {
-      let settled = false;
-      const finish = (value: boolean) => {
-        if (settled) return;
-        settled = true;
-        resolve(value);
-      };
-
-      const monitor = () => {
-        if (!this.isMainPlaying()) { finish(false); return; }
-
-        const remainingMs = targetPositionMs - this.getMainPositionMs();
-        if (remainingMs > 140) {
-          requestAnimationFrame(monitor);
-          return;
-        }
-
-        const source = context.createBufferSource();
-        const gain = context.createGain();
-        source.buffer = buffer;
-        gain.gain.value = this.cueVolume;
-        source.connect(gain);
-        gain.connect(context.destination);
-
-        // Re-anchor the cue to the march's ACTUAL media position immediately
-        // before scheduling. This avoids phone-browser timer/output drift.
-        const correctedRemainingMs = Math.max(0, targetPositionMs - this.getMainPositionMs());
-        const startAt = context.currentTime + Math.max(0.005, correctedRemainingMs / 1000);
-
-        try {
-          source.start(startAt);
-          window.setTimeout(
-            () => this.duckMusicForCue(duckDurationMs, duckLevel, true),
-            Math.max(0, correctedRemainingMs - 10)
-          );
-          finish(true);
-        } catch {
-          finish(false);
-        }
-      };
-
-      requestAnimationFrame(monitor);
-    });
-  }
-
-  async waitForMainPosition(targetPositionMs: number): Promise<boolean> {
-    return new Promise<boolean>((resolve) => {
-      const monitor = () => {
-        if (!this.isMainPlaying()) { resolve(false); return; }
-        if (this.getMainPositionMs() >= targetPositionMs - 8) { resolve(true); return; }
-        requestAnimationFrame(monitor);
-      };
-      requestAnimationFrame(monitor);
-    });
-  }
-
   async playCueFile(
     filename: string,
     duckDurationMs = 950,
@@ -1150,7 +957,7 @@ export class AudioEngine {
     this.ending.load();
   }
 
-  async playEndingCue(isKnights: boolean): Promise<void> {
+  async playEndingCue(isKnights: boolean, duckLevel?: number): Promise<void> {
     const filename = isKnights
       ? "knights_ending_beat.wav"
       : "Ending Beat.wav";
@@ -1168,8 +975,8 @@ export class AudioEngine {
       this.ending.volume = 1.0;
 
       const fallbackMs = isKnights ? 4200 : 4500;
-      const endingDuckLevel = isKnights ? 0.40 : 0.40;
-      this.duckMusicForCue(fallbackMs + 250, endingDuckLevel, false);
+      const endingDuckLevel = duckLevel ?? 0.40;
+      this.duckMusicForCue(fallbackMs + 250, endingDuckLevel, true);
 
       return new Promise<void>(async (resolve) => {
         const finish = () => {
@@ -1183,9 +990,10 @@ export class AudioEngine {
 
     const durationMs = Math.round(buffer.duration * 1000);
 
-    // All musical endings now use the same 40% march duck level.
-    const endingDuckLevel = isKnights ? 0.40 : 0.40;
-    this.duckMusicForCue(durationMs + 250, endingDuckLevel, false);
+    // Knights of St John ending needs more separation from the march.
+    // Standard ending stays at 30%; Knights ducks the march to 15%.
+    const endingDuckLevel = duckLevel ?? 0.40;
+    this.duckMusicForCue(durationMs + 250, endingDuckLevel, true);
 
     const source = context.createBufferSource();
     const gain = context.createGain();
@@ -1228,40 +1036,21 @@ export class AudioEngine {
     const normalLevel = this.musicVolume;
 
     // Manual drum cues use relative ducking:
-    // e.g. music at 80% with a 40% duck target becomes 32%.
+    // e.g. music at 80% with a 30% duck target becomes 24%.
     // This prevents the old problem where music at 30% or lower barely
-    // ducked at all because the duck target was treated as an absolute level.
+    // ducked at all because 0.30 was treated as an absolute level.
     const requestedLevel = relativeToCurrent
       ? normalLevel * level
       : level;
 
     const duckLevel = Math.max(0, Math.min(normalLevel, requestedLevel));
-
-    if (this.isPhoneBrowser() && this.mainGain) {
-      // PHONE-ONLY Windows-match ducking:
-      // Windows uses an ABSOLUTE output level of 30% (or lower when the
-      // operator's Music Volume is already below 30%). Mobile Safari can ignore
-      // scripted HTMLAudioElement.volume changes while the element is routed
-      // through WebAudio, so temporarily put the media element at unity and
-      // enforce the audible level with the GainNode itself.
-      const absoluteDuckLevel = Math.max(0, Math.min(normalLevel, level));
-      this.main.volume = 1.0;
-      this.setMainGain(absoluteDuckLevel);
-    } else {
-      this.main.volume = duckLevel;
-    }
+    this.main.volume = duckLevel;
 
     window.setTimeout(() => {
       if (generation !== this.duckGeneration) return;
 
       if (this.isMainPlaying()) {
-        if (this.isPhoneBrowser() && this.mainGain) {
-          // Restore the normal phone path after the cue duck.
-          this.main.volume = this.musicVolume;
-          this.setMainGain(1.0);
-        } else {
-          this.main.volume = this.musicVolume;
-        }
+        this.main.volume = this.musicVolume;
       }
     }, Math.max(80, Math.round(durationMs)));
   }
