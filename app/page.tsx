@@ -1344,8 +1344,27 @@ export default function Home() {
       return;
     }
 
-    const beatMap = selectedTrack.timing_map ?? [];
     const position = engine.getMainPositionMs();
+
+    // Slow March / Inspection Tunes use the final Windows ending pattern.
+    // IMPORTANT: reload the latest LIB timing map when the operator presses
+    // End Song / Next Song instead of relying only on the timing_map snapshot
+    // saved when the track was originally uploaded. This keeps the webapp in
+    // sync with later LIB edits made for the Windows version.
+    const category = (selectedTrack.category || "").trim().toLowerCase();
+    const usesSlowMarchEndingSpacing =
+      category === "slow march" || category === "inspection tunes";
+
+    let beatMap = selectedTrack.timing_map ?? [];
+    if (usesSlowMarchEndingSpacing) {
+      try {
+        const latestWindowsMap = await loadWindowsTimingMap(musicFileName(selectedTrack));
+        const latestBeatMap = latestWindowsMap?.parsed?.beatMap ?? [];
+        if (latestBeatMap.length) beatMap = latestBeatMap;
+      } catch {
+        // Fall back to the stored timing map if the current LIB cannot be loaded.
+      }
+    }
 
     if (!beatMap.length) {
       setStatus(
@@ -1364,13 +1383,6 @@ export default function Home() {
       setEndingAction(null);
       return;
     }
-
-    // Slow March / Inspection Tunes use the final Windows ending pattern:
-    // Double -> Double -> Single -> Single -> Single, with every cue group
-    // exactly one full musical beat apart according to the active LIB row.
-    const category = (selectedTrack.category || "").trim().toLowerCase();
-    const usesSlowMarchEndingSpacing =
-      category === "slow march" || category === "inspection tunes";
 
     if (usesSlowMarchEndingSpacing) {
       const timingRow = beatContextForPosition(beatMap, target);
