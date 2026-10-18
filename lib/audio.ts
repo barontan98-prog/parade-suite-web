@@ -1039,6 +1039,70 @@ export class AudioEngine {
     return true;
   }
 
+  async scheduleWindowsTimedCueSequence(
+    cues: Array<{ filename: string; offsetMs: number }>,
+    delayMs: number,
+    duckLevel = this.duckedMusicLevel
+  ): Promise<boolean> {
+    if (!cues.length) return false;
+
+    await this.unlockCueAudio();
+    const context = this.cueContext;
+    if (!context) return false;
+
+    if (context.state === "suspended") {
+      try {
+        await context.resume();
+      } catch {
+        return false;
+      }
+    }
+
+    const loaded = await Promise.all(
+      cues.map(async (cue) => ({ ...cue, buffer: await this.loadCueBuffer(cue.filename) }))
+    );
+    if (loaded.some((cue) => !cue.buffer)) return false;
+
+    const baseStart = context.currentTime + Math.max(0.005, delayMs / 1000);
+    const scheduledSources: AudioBufferSourceNode[] = [];
+
+    try {
+      for (const cue of loaded) {
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+        source.buffer = cue.buffer as AudioBuffer;
+        source.playbackRate.value = 1.0;
+        gain.gain.value = this.cueVolume;
+        source.connect(gain);
+        gain.connect(context.destination);
+
+        const startAt = baseStart + Math.max(0, cue.offsetMs) / 1000;
+        source.start(startAt);
+
+        this.endingSources.add(source);
+        source.addEventListener("ended", () => this.endingSources.delete(source), { once: true });
+        scheduledSources.push(source);
+      }
+    } catch {
+      for (const source of scheduledSources) {
+        try { source.stop(); } catch {}
+        this.endingSources.delete(source);
+      }
+      return false;
+    }
+
+    const finalCue = loaded[loaded.length - 1];
+    const finalBuffer = finalCue.buffer as AudioBuffer;
+    const totalDurationMs =
+      Math.max(0, finalCue.offsetMs) + Math.round(finalBuffer.duration * 1000) + 250;
+
+    window.setTimeout(() => {
+      this.duckMusicForCue(totalDurationMs, duckLevel, true);
+    }, Math.max(0, delayMs - 10));
+
+    return true;
+  }
+
   async scheduleExclusiveCueSequence(
     cues: Array<{ filename: string; offsetMs: number }>,
     delayMs: number,
